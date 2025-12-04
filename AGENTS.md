@@ -1,6 +1,11 @@
 
 # 2025-12-05 (Friday)
 
+- ☐
+
+
+# 2025-12-05 (Friday)
+
 - ☐ give it basic styles, nothing fancy, just to make it look decent
 
 

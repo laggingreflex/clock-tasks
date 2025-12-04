@@ -10,6 +10,40 @@ interface Task {
   totalTime: number
 }
 
+function formatTime(seconds: number): string {
+  if (seconds < 60) {
+    return `${seconds}s`
+  }
+  
+  const minutes = seconds / 60
+  if (minutes < 60) {
+    return `${minutes.toFixed(1)}m`
+  }
+  
+  const hours = minutes / 60
+  if (hours < 24) {
+    return `${hours.toFixed(1)}h`
+  }
+  
+  const days = hours / 24
+  if (days < 7) {
+    return `${days.toFixed(1)}d`
+  }
+  
+  const weeks = days / 7
+  if (weeks < 4.3) {
+    return `${weeks.toFixed(1)}w`
+  }
+  
+  const months = days / 30.44
+  if (months < 12) {
+    return `${months.toFixed(1)}mo`
+  }
+  
+  const years = days / 365.25
+  return `${years.toFixed(1)}y`
+}
+
 function App() {
   const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem('clockTasks')
@@ -158,7 +192,7 @@ function App() {
       <h1>Tasks Clock</h1>
 
       <div>
-        <p>Total elapsed time: {totalElapsedTime} seconds</p>
+        <p>Total elapsed time: {formatTime(totalElapsedTime)}</p>
         <button onClick={stopAll}>Stop All</button>
         <button onClick={resetAll}>Reset All</button>
         <button onClick={deleteAllTasks}>Delete All</button>
@@ -177,11 +211,11 @@ function App() {
               {task.isRunning ? 'Running' : 'Start'}
             </button>
             {task.isRunning ? (
-              <span>Current session: {task.currentSessionTime} seconds</span>
+              <span>Current session: {formatTime(task.currentSessionTime)}</span>
             ) : (
-              <span>Last session: {task.lastSessionTime} seconds</span>
+              <span>Last session: {formatTime(task.lastSessionTime)}</span>
             )}
-            <span>Total: {task.totalTime} seconds</span>
+            <span>Total: {formatTime(task.totalTime)}</span>
             <button className="delete-btn" onClick={() => deleteTask(task.id)}>Delete</button>
           </div>
         ))}

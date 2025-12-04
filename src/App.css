@@ -7,18 +7,19 @@ body {
 
 h1 {
   color: #333;
-  margin-bottom: 10px;
+  margin: 5px 0;
+  font-size: 24px;
 }
 
 button {
-  padding: 8px 12px;
-  margin: 4px;
+  padding: 6px 10px;
+  margin: 2px;
   background-color: #0066cc;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
 }
 
@@ -31,12 +32,12 @@ button:active {
 }
 
 input[type="text"] {
-  padding: 8px;
-  margin-right: 8px;
+  padding: 6px;
+  margin-right: 6px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 14px;
-  width: 200px;
+  font-size: 13px;
+  width: 150px;
 }
 
 input[type="text"]:focus {
@@ -46,62 +47,63 @@ input[type="text"]:focus {
 }
 
 span {
-  margin-right: 12px;
+  margin-right: 8px;
   color: #666;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 p {
-  margin: 8px 0;
+  margin: 4px 0;
   color: #333;
   font-weight: 500;
+  font-size: 13px;
 }
 
 #root > div {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 10px;
 }
 
 #root > div > div:first-of-type {
   background-color: white;
-  padding: 20px;
-  border-radius: 8px;
+  padding: 10px;
+  border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 #root > div > div:nth-of-type(2) {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 #root > div > div:nth-of-type(2) > div {
   background-color: white;
-  padding: 16px;
-  margin-bottom: 12px;
-  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 6px;
+  border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 form {
   background-color: white;
-  padding: 20px;
-  border-radius: 8px;
+  padding: 10px;
+  border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 form input {
-  margin-right: 8px;
+  margin-right: 6px;
 }
 
 .delete-btn {
   background-color: #cc3333;
-  padding: 6px 10px;
-  font-size: 12px;
+  padding: 5px 8px;
+  font-size: 11px;
 }
 
 .delete-btn:hover {
@@ -111,3 +113,4 @@ form input {
 .delete-btn:active {
   background-color: #663333;
 }
+
