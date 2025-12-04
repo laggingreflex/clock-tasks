@@ -203,7 +203,11 @@ function App() {
       </div>
 
       <div className="tasks-list">
-        {tasks.map(task => (
+        {tasks.map(task => {
+          const totalTasksTime = tasks.reduce((sum, t) => sum + t.totalTime, 0)
+          const percentage = totalTasksTime > 0 ? ((task.totalTime / totalTasksTime) * 100).toFixed(1) : 0
+          
+          return (
           <div className="task-item" key={task.id}>
             <div className="task-inputs">
               <input
@@ -219,7 +223,7 @@ function App() {
               ) : (
                 <span>Last: {formatTime(task.lastSessionTime)}</span>
               )}
-              <span>Total: {formatTime(task.totalTime)}</span>
+              <span>Total: {formatTime(task.totalTime)} ({percentage}%)</span>
             </div>
             <div className="task-buttons">
               <button onClick={() => startTask(task.id)}>
@@ -228,7 +232,9 @@ function App() {
               <button className="delete-btn" onClick={() => deleteTask(task.id)}>Delete</button>
             </div>
           </div>
-        ))}
+        )
+        })}
+
       </div>
 
       <AddTaskForm onAdd={addTask} />
