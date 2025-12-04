@@ -191,6 +191,8 @@ function App() {
     <div>
       <h1>Tasks Clock</h1>
 
+      <AddTaskForm onAdd={addTask} />
+
       <div className="controls">
         <div className="controls-top">
           <p>Total: {formatTime(totalElapsedTime)}</p>
@@ -236,8 +238,6 @@ function App() {
         })}
 
       </div>
-
-      <AddTaskForm onAdd={addTask} />
     </div>
   )
 }
