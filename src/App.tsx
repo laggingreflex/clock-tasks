@@ -206,7 +206,7 @@ function App() {
         {tasks.map(task => {
           const totalTasksTime = tasks.reduce((sum, t) => sum + t.totalTime, 0)
           const percentage = totalTasksTime > 0 ? ((task.totalTime / totalTasksTime) * 100).toFixed(1) : 0
-          
+
           return (
           <div className="task-item" key={task.id}>
             <div className="task-inputs">
