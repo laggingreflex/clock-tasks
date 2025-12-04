@@ -1,0 +1,113 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f5f5f5;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  color: #333;
+  margin-bottom: 10px;
+}
+
+button {
+  padding: 8px 12px;
+  margin: 4px;
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+button:hover {
+  background-color: #0052a3;
+}
+
+button:active {
+  background-color: #003d7a;
+}
+
+input[type="text"] {
+  padding: 8px;
+  margin-right: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 200px;
+}
+
+input[type="text"]:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 3px rgba(0, 102, 204, 0.3);
+}
+
+span {
+  margin-right: 12px;
+  color: #666;
+  font-size: 14px;
+}
+
+p {
+  margin: 8px 0;
+  color: #333;
+  font-weight: 500;
+}
+
+#root > div {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+#root > div > div:first-of-type {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+#root > div > div:nth-of-type(2) {
+  margin-bottom: 20px;
+}
+
+#root > div > div:nth-of-type(2) > div {
+  background-color: white;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+form {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+form input {
+  margin-right: 8px;
+}
+
+.delete-btn {
+  background-color: #cc3333;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.delete-btn:hover {
+  background-color: #994444;
+}
+
+.delete-btn:active {
+  background-color: #663333;
+}

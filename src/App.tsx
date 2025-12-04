@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import './App.css'
 
 interface Task {
   id: string
@@ -143,6 +144,15 @@ function App() {
     )
   }
 
+  const deleteTask = (id: string) => {
+    setTasks(prevTasks => prevTasks.filter(task => task.id !== id))
+  }
+
+  const deleteAllTasks = () => {
+    setTasks([])
+    setTotalElapsedTime(0)
+  }
+
   return (
     <div>
       <h1>Tasks Clock</h1>
@@ -151,6 +161,7 @@ function App() {
         <p>Total elapsed time: {totalElapsedTime} seconds</p>
         <button onClick={stopAll}>Stop All</button>
         <button onClick={resetAll}>Reset All</button>
+        <button onClick={deleteAllTasks}>Delete All</button>
       </div>
 
       <div>
@@ -171,6 +182,7 @@ function App() {
               <span>Last session: {task.lastSessionTime} seconds</span>
             )}
             <span>Total: {task.totalTime} seconds</span>
+            <button className="delete-btn" onClick={() => deleteTask(task.id)}>Delete</button>
           </div>
         ))}
       </div>
