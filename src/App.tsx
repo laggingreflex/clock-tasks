@@ -14,32 +14,32 @@ function formatTime(seconds: number): string {
   if (seconds < 60) {
     return `${seconds}s`
   }
-  
+
   const minutes = seconds / 60
   if (minutes < 60) {
     return `${minutes.toFixed(1)}m`
   }
-  
+
   const hours = minutes / 60
   if (hours < 24) {
     return `${hours.toFixed(1)}h`
   }
-  
+
   const days = hours / 24
   if (days < 7) {
     return `${days.toFixed(1)}d`
   }
-  
+
   const weeks = days / 7
   if (weeks < 4.3) {
     return `${weeks.toFixed(1)}w`
   }
-  
+
   const months = days / 30.44
   if (months < 12) {
     return `${months.toFixed(1)}mo`
   }
-  
+
   const years = days / 365.25
   return `${years.toFixed(1)}y`
 }
@@ -191,32 +191,42 @@ function App() {
     <div>
       <h1>Tasks Clock</h1>
 
-      <div>
-        <p>Total elapsed time: {formatTime(totalElapsedTime)}</p>
-        <button onClick={stopAll}>Stop All</button>
-        <button onClick={resetAll}>Reset All</button>
-        <button onClick={deleteAllTasks}>Delete All</button>
+      <div className="controls">
+        <div className="controls-top">
+          <p>Total: {formatTime(totalElapsedTime)}</p>
+        </div>
+        <div className="controls-buttons">
+          <button onClick={stopAll}>Stop All</button>
+          <button onClick={resetAll}>Reset All</button>
+          <button onClick={deleteAllTasks}>Delete All</button>
+        </div>
       </div>
 
-      <div>
+      <div className="tasks-list">
         {tasks.map(task => (
-          <div key={task.id}>
-            <input
-              type="text"
-              value={task.name}
-              onChange={(e) => updateTaskName(task.id, e.target.value)}
-              placeholder="Task name"
-            />
-            <button onClick={() => startTask(task.id)}>
-              {task.isRunning ? 'Running' : 'Start'}
-            </button>
-            {task.isRunning ? (
-              <span>Current session: {formatTime(task.currentSessionTime)}</span>
-            ) : (
-              <span>Last session: {formatTime(task.lastSessionTime)}</span>
-            )}
-            <span>Total: {formatTime(task.totalTime)}</span>
-            <button className="delete-btn" onClick={() => deleteTask(task.id)}>Delete</button>
+          <div className="task-item" key={task.id}>
+            <div className="task-inputs">
+              <input
+                type="text"
+                value={task.name}
+                onChange={(e) => updateTaskName(task.id, e.target.value)}
+                placeholder="Task name"
+              />
+            </div>
+            <div className="task-stats">
+              {task.isRunning ? (
+                <span>Current: {formatTime(task.currentSessionTime)}</span>
+              ) : (
+                <span>Last: {formatTime(task.lastSessionTime)}</span>
+              )}
+              <span>Total: {formatTime(task.totalTime)}</span>
+            </div>
+            <div className="task-buttons">
+              <button onClick={() => startTask(task.id)}>
+                {task.isRunning ? 'Running' : 'Start'}
+              </button>
+              <button className="delete-btn" onClick={() => deleteTask(task.id)}>Delete</button>
+            </div>
           </div>
         ))}
       </div>
@@ -241,13 +251,15 @@ function AddTaskForm({ onAdd }: AddTaskFormProps) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="Add new task"
-      />
-      <button type="submit">Add Task</button>
+      <div className="form-inputs">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Add new task"
+        />
+        <button type="submit">Add Task</button>
+      </div>
     </form>
   )
 }

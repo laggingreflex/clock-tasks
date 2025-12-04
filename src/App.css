@@ -7,13 +7,12 @@ body {
 
 h1 {
   color: #333;
-  margin: 5px 0;
+  margin: 0 0 15px 0;
   font-size: 24px;
 }
 
 button {
-  padding: 6px 10px;
-  margin: 2px;
+  padding: 8px 14px;
   background-color: #0066cc;
   color: white;
   border: none;
@@ -32,12 +31,10 @@ button:active {
 }
 
 input[type="text"] {
-  padding: 6px;
-  margin-right: 6px;
+  padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 13px;
-  width: 150px;
 }
 
 input[type="text"]:focus {
@@ -47,63 +44,103 @@ input[type="text"]:focus {
 }
 
 span {
-  margin-right: 8px;
   color: #666;
   font-size: 13px;
 }
 
 p {
-  margin: 4px 0;
+  margin: 0;
   color: #333;
   font-weight: 500;
   font-size: 13px;
 }
 
 #root > div {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 10px;
+  padding: 12px;
 }
 
-#root > div > div:first-of-type {
+.controls {
   background-color: white;
-  padding: 10px;
+  padding: 12px;
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  display: flex;
+  gap: 12px;
+  flex-direction: column;
 }
 
-#root > div > div:nth-of-type(2) {
-  margin-bottom: 10px;
+.controls-top {
+  display: flex;
+  align-items: center;
 }
 
-#root > div > div:nth-of-type(2) > div {
+.controls-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.controls-buttons button {
+  margin: 0;
+  min-width: fit-content;
+}
+
+.tasks-list {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-item {
   background-color: white;
-  padding: 8px;
-  margin-bottom: 6px;
+  padding: 10px 12px;
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
-  align-items: center;
+  gap: 10px;
+  flex-direction: column;
+}
+
+.task-inputs {
+  display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.task-inputs input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.task-stats {
+  display: flex;
+  gap: 16px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
-form {
-  background-color: white;
-  padding: 10px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.task-stats span {
+  flex: 0 0 auto;
 }
 
-form input {
-  margin-right: 6px;
+.task-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.task-buttons button {
+  margin: 0;
+  min-width: fit-content;
 }
 
 .delete-btn {
   background-color: #cc3333;
-  padding: 5px 8px;
-  font-size: 11px;
 }
 
 .delete-btn:hover {
@@ -113,4 +150,34 @@ form input {
 .delete-btn:active {
   background-color: #663333;
 }
+
+form {
+  background-color: white;
+  padding: 12px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-inputs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.form-inputs input {
+  flex: 1;
+  min-width: 100px;
+}
+
+.form-inputs button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+
+
+
 
