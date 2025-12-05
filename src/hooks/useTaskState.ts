@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { loadFromLocalStorage } from '../utils/storageHelpers'
-import type { TaskManagerState } from '../core'
-import { createLogger } from '../utils/logger'
+import { loadFromLocalStorage } from '@/utils/storageHelpers'
+import type { TaskManagerState } from '@/core'
+import { createLogger } from '@/utils/logger'
 
 const log = createLogger('useTaskState')
 

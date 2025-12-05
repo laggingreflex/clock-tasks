@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
-import { googleDriveService } from '../services/googleDriveService'
-import { createLogger } from '../utils/logger'
-import { saveToLocalStorage } from '../core'
-import type { User, StoredData } from '../types'
-import type { TaskManagerState } from '../core'
+import { googleDriveService } from '@/services/googleDriveService'
+import { createLogger } from '@/utils/logger'
+import { saveToLocalStorage } from '@/core'
+import type { User } from '@/types'
+import type { StoredData } from '@/core'
+import type { TaskManagerState } from '@/core'
 
 const log = createLogger('useSyncEffect')
 

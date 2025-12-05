@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { TaskQueries } from '../core'
-import type { TaskManagerState } from '../core'
+import { TaskQueries } from '@/core'
+import type { TaskManagerState } from '@/core'
 
 export const useSortedTasks = (state: TaskManagerState, now: number, sortMode: 'total' | 'alphabetical') => {
   return useMemo(() => {

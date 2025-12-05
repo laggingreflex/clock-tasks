@@ -1,5 +1,6 @@
 // Google Drive API service for storing tasks
-import { createLogger } from '../utils/logger'
+import { createLogger } from '@/utils/logger'
+import type { StoredData } from '@/core'
 
 declare global {
   interface Window {
@@ -139,7 +140,7 @@ class GoogleDriveService {
     }
   }
 
-  async loadTasks(fileId: string): Promise<{ tasks: any[]; history?: any[]; lastModified?: number }> {
+  async loadTasks(fileId: string): Promise<StoredData> {
     try {
       log.debug('Loading tasks from Google Drive...')
       const response = await fetch(
@@ -155,14 +156,14 @@ class GoogleDriveService {
 
       const data = await response.json()
       log.log(`☁️ Loaded from Google Drive: ${data.tasks?.length || 0} tasks, ${data.history?.length || 0} clicks`)
-      return data || { tasks: [], history: [] }
+      return data || { tasks: [], history: [], lastModified: Date.now() }
     } catch (error) {
       log.error('Error loading tasks from Drive:', error)
-      return { tasks: [], history: [] }
+      return { tasks: [], history: [], lastModified: Date.now() }
     }
   }
 
-  async updateTasksFile(fileId: string, data: any): Promise<void> {
+  async updateTasksFile(fileId: string, data: StoredData): Promise<void> {
     try {
       log.debug(`Syncing to Google Drive: ${data.tasks?.length || 0} tasks, ${data.history?.length || 0} clicks`)
       const response = await fetch(

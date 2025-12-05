@@ -4,7 +4,7 @@
  */
 
 import type { StoredData, TaskData, ClickEvent, StorageBackend } from './types'
-import { createLogger } from '../utils/logger'
+import { createLogger } from '@/utils/logger'
 
 const log = createLogger('Storage')
 const STORAGE_KEY = 'clockTasks'

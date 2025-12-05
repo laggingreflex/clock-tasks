@@ -1,5 +1,5 @@
-import type { User } from '../types'
-import { formatTime } from '../utils/timeFormatter'
+import type { User } from '@/types'
+import { formatTime } from '@/core'
 
 interface UserHeaderProps {
   user: User

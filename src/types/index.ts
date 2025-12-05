@@ -1,28 +1,7 @@
-export interface TaskData {
-  id: string
-  name: string
-}
+// Core types are re-exported from core module for convenience
+export type { TaskData, ClickEvent, StoredData, Task, TaskStats } from '@/core'
 
-export interface ClickEvent {
-  taskId: string
-  timestamp: number // Unix timestamp when task was clicked
-}
-
-export interface StoredData {
-  tasks: TaskData[]
-  history: ClickEvent[] // Chronological list of all task clicks
-  lastModified: number
-}
-
-export interface Task {
-  id: string
-  name: string
-  isRunning: boolean
-  currentSessionTime: number
-  lastSessionTime: number
-  totalTime: number
-}
-
+// App-specific types
 export interface User {
   id: string
   email: string

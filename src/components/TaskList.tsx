@@ -1,6 +1,6 @@
-import type { Task } from '../types'
+import type { Task } from '@/core'
 import { TaskItem } from './TaskItem'
-import { calculateTaskPercentage } from '../utils/taskHelpers'
+import { calculateTaskPercentage } from '@/core'
 
 interface TaskListProps {
   tasks: Task[]

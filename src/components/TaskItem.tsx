@@ -1,5 +1,5 @@
-import type { Task } from '../types'
-import { formatTime } from '../utils/timeFormatter'
+import type { Task } from '@/core'
+import { formatTime } from '@/core'
 
 interface TaskItemProps {
   task: Task

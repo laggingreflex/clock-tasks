@@ -1,4 +1,4 @@
-import type { User } from '../types'
+import type { User } from '@/types'
 
 export const GOOGLE_OAUTH_SCOPE = 'openid email profile https://www.googleapis.com/auth/drive.file'
 

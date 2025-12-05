@@ -1,7 +1,7 @@
 import { forwardRef } from 'react'
 import { useGoogleLogin } from '@react-oauth/google'
-import type { User } from '../types'
-import { createUserFromGoogleInfo, fetchUserInfo, GOOGLE_OAUTH_SCOPE } from '../utils/authHelpers'
+import type { User } from '@/types'
+import { createUserFromGoogleInfo, fetchUserInfo, GOOGLE_OAUTH_SCOPE } from '@/utils/authHelpers'
 
 interface LoginComponentProps {
   onLoginSuccess: (user: User) => void

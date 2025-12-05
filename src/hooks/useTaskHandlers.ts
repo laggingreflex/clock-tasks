@@ -1,7 +1,6 @@
-import { TaskOperations, TaskQueries } from '../core'
-import type { TaskManagerState } from '../core'
-import type { StoredData } from '../types'
-import { createLogger } from '../utils/logger'
+import { TaskOperations, TaskQueries } from '@/core'
+import type { TaskManagerState, StoredData } from '@/core'
+import { createLogger } from '@/utils/logger'
 
 const log = createLogger('useTaskHandlers')
 

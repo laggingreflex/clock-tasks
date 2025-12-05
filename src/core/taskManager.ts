@@ -5,7 +5,7 @@
 
 import type { TaskData, ClickEvent, StoredData, Task } from './types'
 import { calculateTaskStats, getCurrentRunningTaskId as getRunningTaskId, convertTaskDataList } from './calculations'
-import { createLogger } from '../utils/logger'
+import { createLogger } from '@/utils/logger'
 
 const log = createLogger('TaskManager')
 
