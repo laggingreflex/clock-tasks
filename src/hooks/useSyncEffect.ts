@@ -159,7 +159,7 @@ export const useSyncEffect = (
     try {
       if (fileId && user) {
         log.log(`🔄 Starting sync to Google Drive...`)
-        
+
         // Intelligently reconcile local and server data
         log.debug(`Reconciling with server...`)
         const reconciledData = await reconcileWithServer(fileId, dataToSync)
