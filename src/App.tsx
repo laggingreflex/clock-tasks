@@ -62,6 +62,7 @@ function App() {
     return 0
   })
   const [deletionMode, setDeletionMode] = useState(false)
+  const [lastAddedTaskId, setLastAddedTaskId] = useState<string | null>(null)
 
   // Save to localStorage whenever state changes
   useEffect(() => {
@@ -72,6 +73,17 @@ function App() {
   useEffect(() => {
     document.title = `Tasks Clock: ${formatTime(totalElapsedTime)}`
   }, [totalElapsedTime])
+
+  // Scroll to newly added task
+  useEffect(() => {
+    if (lastAddedTaskId) {
+      const element = document.getElementById(`task-${lastAddedTaskId}`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+      setLastAddedTaskId(null)
+    }
+  }, [lastAddedTaskId])
 
   // Handle clicking outside to exit deletion mode
   useEffect(() => {
@@ -186,6 +198,7 @@ function App() {
         })
         return [...updated, newTask]
       })
+      setLastAddedTaskId(newTask.id)
     }
   }
 
@@ -239,7 +252,7 @@ function App() {
           const percentage = totalTasksTime > 0 ? ((task.totalTime / totalTasksTime) * 100).toFixed(1) : 0
 
           return (
-          <div className={`task-item ${task.isRunning ? 'running' : ''}`} key={task.id}>
+          <div className={`task-item ${task.isRunning ? 'running' : ''}`} key={task.id} id={`task-${task.id}`}>
             <div className="task-inputs">
               <input
                 type="text"
