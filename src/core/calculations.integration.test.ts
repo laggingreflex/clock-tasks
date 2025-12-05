@@ -11,7 +11,6 @@ import type { TaskManagerState } from './taskManager'
 
 describe('Time Calculation Logic Bug Hunt', () => {
   let state: TaskManagerState
-  let currentTime: number
 
   beforeEach(() => {
     state = {
@@ -19,7 +18,6 @@ describe('Time Calculation Logic Bug Hunt', () => {
       clickHistory: [],
       lastModified: 0
     }
-    currentTime = 1000 // Start at t=1000ms
   })
 
   /**
@@ -157,7 +155,6 @@ describe('Time Calculation Logic Bug Hunt', () => {
 
   describe('Scenario 3: Detailed breakdown of calculateTaskStats logic', () => {
     it('should show exactly which clicks are being counted for each task', () => {
-      const timeCtrl = createTimeController(0)
 
       // Manually build a simple scenario
       state = {
@@ -204,7 +201,6 @@ describe('Time Calculation Logic Bug Hunt', () => {
 
   describe('Scenario 4: Expose the "0-out previous tasks" bug', () => {
     it('should NOT reset previous task times when adding new tasks', () => {
-      const timeCtrl = createTimeController(0)
 
       // Create A
       state = TaskOperations.addAndStartTask('A', state, () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { LocalStorageBackend, InMemoryBackend, loadFromLocalStorage, saveToLocalStorage, clearLocalStorage } from './storage';
-import type { StoredData, TaskData, ClickEvent } from './types';
+import type { StoredData } from './types';
 
 describe('LocalStorageBackend', () => {
   let backend: LocalStorageBackend;

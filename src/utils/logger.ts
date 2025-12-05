@@ -21,7 +21,7 @@ export function createLogger(moduleName: string) {
       console.error(modulePrefix, ...args)
     },
     debug: (...args: any[]) => {
-      if (process.env.NODE_ENV !== 'production') {
+      if ((globalThis as any).process?.env?.NODE_ENV !== 'production') {
         console.debug(modulePrefix, ...args)
       }
     }
@@ -45,7 +45,7 @@ export const logger = {
     console.error(PREFIX, ...args)
   },
   debug: (...args: any[]) => {
-    if (process.env.NODE_ENV !== 'production') {
+    if ((globalThis as any).process?.env?.NODE_ENV !== 'production') {
       console.debug(PREFIX, ...args)
     }
   }

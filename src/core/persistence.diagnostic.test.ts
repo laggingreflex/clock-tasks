@@ -1,6 +1,6 @@
 /**
  * Diagnostic tests for the "tasks getting zeroed out" persistence bug
- * 
+ *
  * This test suite simulates the exact flow:
  * 1. Create 3 tasks in UI
  * 2. Save to localStorage (as happens in your sync)
@@ -9,7 +9,7 @@
  * 5. Query tasks and see if they're zeroed
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { TaskOperations, TaskQueries } from './taskManager'
 import { InMemoryBackend } from './storage'
 import type { TaskManagerState } from './taskManager'
@@ -52,7 +52,7 @@ describe('Persistence Bug Hunt - Task Zeroing Issue', () => {
       console.log('\nPHASE 2: Query before persistence (at t=3500)...')
       const beforeSave = TaskQueries.getAllTasks(state, 3500)
       console.log('Before save:')
-      beforeSave.forEach((task, i) => {
+      beforeSave.forEach((task) => {
         console.log(`  Task ${task.name}: totalTime=${task.totalTime}s, isRunning=${task.isRunning}`)
       })
 
@@ -83,7 +83,7 @@ describe('Persistence Bug Hunt - Task Zeroing Issue', () => {
       console.log('\nPHASE 5: Query after restoration (at t=3500)...')
       const afterLoad = TaskQueries.getAllTasks(restoredState, 3500)
       console.log('After load:')
-      afterLoad.forEach((task, i) => {
+      afterLoad.forEach((task) => {
         console.log(`  Task ${task.name}: totalTime=${task.totalTime}s, isRunning=${task.isRunning}`)
       })
 

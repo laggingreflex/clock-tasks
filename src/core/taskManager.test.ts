@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TaskOperations, TaskQueries } from './taskManager';
 import type { TaskManagerState } from './taskManager';
-import type { ClickEvent } from './types';
 
 describe('TaskOperations', () => {
   let state: TaskManagerState;

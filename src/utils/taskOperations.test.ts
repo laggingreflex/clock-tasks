@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   addTask,
   startTask,
@@ -7,13 +7,13 @@ import {
   deleteAllTasks,
   resetAllTasks,
 } from './taskOperations';
-import type { TaskData, ClickEvent } from '../types';
+import type { TaskData, ClickEvent, StoredData } from '../types';
 
 describe('taskOperations', () => {
   let taskDataList: TaskData[];
   let clickHistory: ClickEvent[];
-  let mockOnSync: ReturnType<typeof vi.fn>;
-  let mockOnTaskAdded: ReturnType<typeof vi.fn>;
+  let mockOnSync: ReturnType<typeof vi.fn<(data: StoredData) => Promise<void>>>;
+  let mockOnTaskAdded: ReturnType<typeof vi.fn<(id: string) => void>>;
 
   beforeEach(() => {
     taskDataList = [];

@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { TaskOperations, TaskQueries } from './taskManager'
+import { TaskQueries } from './taskManager'
 import type { TaskManagerState } from './taskManager'
 
 describe('Time Calculation - Corrected Tests (Units in Seconds)', () => {
