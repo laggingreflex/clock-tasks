@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
+import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google'
 import { jwtDecode } from 'jwt-decode'
 import { googleDriveService } from './services/googleDriveService'
 
@@ -62,6 +62,38 @@ function formatTime(seconds: number): string {
   return `${years.toFixed(1)}y`
 }
 
+function LoginComponent({ onLoginSuccess }: { onLoginSuccess: (user: User) => void }) {
+  const login = useGoogleLogin({
+    onSuccess: async (tokenResponse: any) => {
+      try {
+        // tokenResponse.access_token is the access token for Drive API
+        const decodedIdToken = jwtDecode<DecodedToken>(tokenResponse.id_token || '')
+        const newUser: User = {
+          id: decodedIdToken.sub,
+          email: decodedIdToken.email,
+          name: decodedIdToken.name,
+          picture: decodedIdToken.picture,
+          accessToken: tokenResponse.access_token
+        }
+        onLoginSuccess(newUser)
+      } catch (error) {
+        console.error('Login failed:', error)
+      }
+    },
+    scope: 'openid email profile https://www.googleapis.com/auth/drive.file'
+  })
+
+  return (
+    <div className="login-container">
+      <h1>Tasks Clock</h1>
+      <p>Sign in with Google to sync your tasks</p>
+      <button onClick={() => login()} style={{ padding: '10px 20px', fontSize: '16px' }}>
+        Sign in with Google
+      </button>
+    </div>
+  )
+}
+
 function App() {
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('googleUser')
@@ -92,7 +124,6 @@ function App() {
   // Initialize Google Drive when user logs in
   useEffect(() => {
     if (user) {
-      googleDriveService.setAccessToken(user.accessToken)
       initializeGoogleDrive()
     }
   }, [user])
@@ -100,6 +131,7 @@ function App() {
   const initializeGoogleDrive = async () => {
     if (!user) return
     try {
+      googleDriveService.setAccessToken(user.accessToken)
       const folderId = await googleDriveService.findOrCreateAppFolder()
 
       const fileId = await googleDriveService.findOrCreateTasksFile(folderId)
@@ -111,6 +143,7 @@ function App() {
       setTotalElapsedTime(driveData.totalElapsedTime || 0)
     } catch (error) {
       console.error('Failed to initialize Google Drive:', error)
+      // Fall back to localStorage if Drive fails
     }
   }
 
@@ -323,33 +356,12 @@ function App() {
   return (
     <div>
       {!user ? (
-        <div className="login-container">
-          <h1>Tasks Clock</h1>
-          <p>Sign in with Google to sync your tasks</p>
-          <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-            <GoogleLogin
-              onSuccess={(credentialResponse) => {
-                try {
-                  const decoded = jwtDecode<DecodedToken>(credentialResponse.credential as string)
-                  const newUser: User = {
-                    id: decoded.sub,
-                    email: decoded.email,
-                    name: decoded.name,
-                    picture: decoded.picture,
-                    accessToken: credentialResponse.credential as string
-                  }
-                  setUser(newUser)
-                  localStorage.setItem('googleUser', JSON.stringify(newUser))
-                } catch (error) {
-                  console.error('Login failed:', error)
-                }
-              }}
-              onError={() => {
-                console.log('Login Failed')
-              }}
-            />
-          </GoogleOAuthProvider>
-        </div>
+        <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+          <LoginComponent onLoginSuccess={(newUser) => {
+            setUser(newUser)
+            localStorage.setItem('googleUser', JSON.stringify(newUser))
+          }} />
+        </GoogleOAuthProvider>
       ) : (
         <div>
           <div className="header">

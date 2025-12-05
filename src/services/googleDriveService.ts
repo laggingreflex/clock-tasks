@@ -1,10 +1,41 @@
 // Google Drive API service for storing tasks
+declare global {
+  interface Window {
+    gapi: any
+  }
+}
 
 class GoogleDriveService {
   private accessToken: string | null = null
 
   setAccessToken(token: string) {
     this.accessToken = token
+    // Also initialize gapi
+    if (window.gapi) {
+      window.gapi.client.setToken({ access_token: token })
+    }
+  }
+
+  async initializeGapi() {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = 'https://apis.google.com/js/api.js'
+      script.onload = () => {
+        window.gapi.load('client', async () => {
+          try {
+            await window.gapi.client.init({
+              apiKey: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+              discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+            })
+            resolve(true)
+          } catch (error) {
+            reject(error)
+          }
+        })
+      }
+      script.onerror = () => reject(new Error('Failed to load gapi'))
+      document.head.appendChild(script)
+    })
   }
 
   private getHeaders() {
