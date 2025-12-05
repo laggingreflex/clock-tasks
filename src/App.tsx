@@ -65,7 +65,7 @@ function LoginComponent({ onLoginSuccess }: { onLoginSuccess: (user: User) => vo
           }
         })
         const userInfo = await userInfoResponse.json()
-        
+
         const newUser: User = {
           id: userInfo.id,
           email: userInfo.email,
@@ -98,6 +98,7 @@ function App() {
     return saved ? JSON.parse(saved) : null
   })
   const [driveFileId, setDriveFileId] = useState<string | null>(null)
+  const [lastSyncTime, setLastSyncTime] = useState<number>(0)
 
   const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem('clockTasks')
@@ -135,34 +136,52 @@ function App() {
       const fileId = await googleDriveService.findOrCreateTasksFile(folderId)
       setDriveFileId(fileId)
 
-      // Load tasks from Google Drive
+      // Always load from Google Drive, ignoring localStorage
       const driveData = await googleDriveService.loadTasks(fileId)
       setTasks(driveData.tasks || [])
       setTotalElapsedTime(driveData.totalElapsedTime || 0)
+      setLastSyncTime(driveData.lastModified || Date.now())
     } catch (error) {
       console.error('Failed to initialize Google Drive:', error)
       // Fall back to localStorage if Drive fails
     }
   }
 
-  // Save to localStorage whenever state changes
+  // Periodically check for remote changes (every 10 seconds)
   useEffect(() => {
-    const data = { tasks, totalElapsedTime }
-    localStorage.setItem('clockTasks', JSON.stringify(data))
+    if (!user || !driveFileId) return
 
-    // Also sync to Google Drive if logged in
-    if (user && driveFileId) {
-      syncToGoogleDrive(data)
-    }
-  }, [tasks, totalElapsedTime, user, driveFileId])
+    const interval = setInterval(async () => {
+      try {
+        const driveData = await googleDriveService.loadTasks(driveFileId)
+        // Simple merge: if remote is newer, use it
+        if (driveData.lastModified && driveData.lastModified > lastSyncTime) {
+          setTasks(driveData.tasks || [])
+          setTotalElapsedTime(driveData.totalElapsedTime || 0)
+          setLastSyncTime(driveData.lastModified)
+        }
+      } catch (error) {
+        console.error('Failed to check for remote changes:', error)
+      }
+    }, 10000)
+
+    return () => clearInterval(interval)
+  }, [user, driveFileId, lastSyncTime])
 
   const syncToGoogleDrive = async (data: any) => {
     try {
-      if (driveFileId) {
-        await googleDriveService.updateTasksFile(driveFileId, data)
+      if (driveFileId && user) {
+        const dataWithTimestamp = {
+          ...data,
+          lastModified: Date.now()
+        }
+        await googleDriveService.updateTasksFile(driveFileId, dataWithTimestamp)
+        setLastSyncTime(Date.now())
+        localStorage.setItem('clockTasks', JSON.stringify(dataWithTimestamp))
       }
     } catch (error) {
       console.error('Failed to sync to Google Drive:', error)
+      localStorage.setItem('clockTasks', JSON.stringify(data))
     }
   }
 
@@ -220,17 +239,15 @@ function App() {
   }, [tasks])
 
   const startTask = (id: string) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task => {
+    setTasks(prevTasks => {
+      const updated = prevTasks.map(task => {
         if (task.id === id) {
-          // Starting this task
           return {
             ...task,
             isRunning: true,
             currentSessionTime: 0
           }
         } else if (task.isRunning) {
-          // This task was running, now stop it and save as last session
           return {
             ...task,
             isRunning: false,
@@ -240,30 +257,39 @@ function App() {
         }
         return task
       })
-    )
+      // Sync this meaningful change to Drive
+      syncToGoogleDrive({ tasks: updated, totalElapsedTime })
+      return updated
+    })
   }
 
   const stopAll = () => {
-    setTasks(prevTasks =>
-      prevTasks.map(task => ({
+    setTasks(prevTasks => {
+      const updated = prevTasks.map(task => ({
         ...task,
         isRunning: false,
         lastSessionTime: task.currentSessionTime,
         currentSessionTime: 0
       }))
-    )
+      // Sync stop all to Drive
+      syncToGoogleDrive({ tasks: updated, totalElapsedTime })
+      return updated
+    })
   }
 
   const resetAll = () => {
-    setTasks(prevTasks =>
-      prevTasks.map(task => ({
+    setTasks(prevTasks => {
+      const updated = prevTasks.map(task => ({
         ...task,
         isRunning: false,
         currentSessionTime: 0,
         lastSessionTime: 0,
         totalTime: 0
       }))
-    )
+      // Sync reset to Drive
+      syncToGoogleDrive({ tasks: updated, totalElapsedTime: 0 })
+      return updated
+    })
     setTotalElapsedTime(0)
   }
 
@@ -278,7 +304,6 @@ function App() {
         totalTime: 0
       }
       setTasks(prev => {
-        // Stop all other tasks, but only update state if they were running
         const updated = prev.map(task => {
           if (task.isRunning) {
             return {
@@ -293,26 +318,39 @@ function App() {
             isRunning: false
           }
         })
-        return [...updated, newTask]
+        const withNewTask = [...updated, newTask]
+        // Sync new task to Drive
+        syncToGoogleDrive({ tasks: withNewTask, totalElapsedTime })
+        return withNewTask
       })
       setLastAddedTaskId(newTask.id)
     }
   }
 
   const updateTaskName = (id: string, name: string) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task => (task.id === id ? { ...task, name } : task))
-    )
+    setTasks(prevTasks => {
+      const updated = prevTasks.map(task => (task.id === id ? { ...task, name } : task))
+      // Sync name change to Drive
+      syncToGoogleDrive({ tasks: updated, totalElapsedTime })
+      return updated
+    })
   }
 
   const deleteTask = (id: string) => {
     if (window.confirm('Delete this task?')) {
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== id))
+      setTasks(prevTasks => {
+        const updated = prevTasks.filter(task => task.id !== id)
+        // Sync deletion to Drive
+        syncToGoogleDrive({ tasks: updated, totalElapsedTime })
+        return updated
+      })
     }
   }
 
   const deleteAllTasks = () => {
     if (window.confirm('Delete all tasks?')) {
+      // Sync deletion to Drive
+      syncToGoogleDrive({ tasks: [], totalElapsedTime: 0 })
       setTasks([])
       setTotalElapsedTime(0)
       setDeletionMode(false)

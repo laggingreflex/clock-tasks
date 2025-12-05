@@ -119,7 +119,7 @@ class GoogleDriveService {
     }
   }
 
-  async loadTasks(fileId: string): Promise<{ tasks: any[]; totalElapsedTime: number }> {
+  async loadTasks(fileId: string): Promise<{ tasks: any[]; totalElapsedTime: number; lastModified?: number }> {
     try {
       const response = await fetch(
         `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
@@ -138,9 +138,7 @@ class GoogleDriveService {
       console.error('Error loading tasks from Drive:', error)
       return { tasks: [], totalElapsedTime: 0 }
     }
-  }
-
-  async updateTasksFile(fileId: string, data: any): Promise<void> {
+  }  async updateTasksFile(fileId: string, data: any): Promise<void> {
     try {
       const response = await fetch(
         `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
