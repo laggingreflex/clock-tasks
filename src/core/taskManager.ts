@@ -26,11 +26,13 @@ export const TaskOperations = {
    */
   addTask(
     name: string,
-    currentState: TaskManagerState
+    currentState: TaskManagerState,
+    getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
     if (!name.trim()) return currentState
 
-    const id = Date.now().toString()
+    const timestamp = getTimestamp()
+    const id = timestamp.toString()
     const newTaskData: TaskData = {
       id,
       name: name.trim()
@@ -39,7 +41,7 @@ export const TaskOperations = {
     return {
       ...currentState,
       tasks: [...currentState.tasks, newTaskData],
-      lastModified: Date.now()
+      lastModified: timestamp
     }
   },
 
@@ -48,12 +50,13 @@ export const TaskOperations = {
    */
   addAndStartTask(
     name: string,
-    currentState: TaskManagerState
+    currentState: TaskManagerState,
+    getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
     if (!name.trim()) return currentState
 
-    const id = Date.now().toString()
-    const now = Date.now()
+    const timestamp = getTimestamp()
+    const id = timestamp.toString()
 
     const newTaskData: TaskData = {
       id,
@@ -63,8 +66,8 @@ export const TaskOperations = {
     return {
       ...currentState,
       tasks: [...currentState.tasks, newTaskData],
-      clickHistory: [...currentState.clickHistory, { taskId: id, timestamp: now }],
-      lastModified: now
+      clickHistory: [...currentState.clickHistory, { taskId: id, timestamp }],
+      lastModified: timestamp
     }
   },
 
@@ -73,13 +76,14 @@ export const TaskOperations = {
    */
   startTask(
     id: string,
-    currentState: TaskManagerState
+    currentState: TaskManagerState,
+    getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
-    const now = Date.now()
+    const timestamp = getTimestamp()
     return {
       ...currentState,
-      clickHistory: [...currentState.clickHistory, { taskId: id, timestamp: now }],
-      lastModified: now
+      clickHistory: [...currentState.clickHistory, { taskId: id, timestamp }],
+      lastModified: timestamp
     }
   },
 
@@ -89,12 +93,13 @@ export const TaskOperations = {
   updateTaskName(
     id: string,
     name: string,
-    currentState: TaskManagerState
+    currentState: TaskManagerState,
+    getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
     return {
       ...currentState,
       tasks: currentState.tasks.map(td => (td.id === id ? { ...td, name } : td)),
-      lastModified: Date.now()
+      lastModified: getTimestamp()
     }
   },
 
@@ -103,47 +108,57 @@ export const TaskOperations = {
    */
   deleteTask(
     id: string,
-    currentState: TaskManagerState
+    currentState: TaskManagerState,
+    getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
     return {
       ...currentState,
       tasks: currentState.tasks.filter(td => td.id !== id),
       clickHistory: currentState.clickHistory.filter(e => e.taskId !== id),
-      lastModified: Date.now()
+      lastModified: getTimestamp()
     }
   },
 
   /**
    * Delete all tasks
    */
-  deleteAllTasks(_currentState: TaskManagerState): TaskManagerState {
+  deleteAllTasks(
+    _currentState: TaskManagerState,
+    getTimestamp: () => number = () => Date.now()
+  ): TaskManagerState {
     return {
       tasks: [],
       clickHistory: [],
-      lastModified: Date.now()
+      lastModified: getTimestamp()
     }
   },
 
   /**
    * Reset all timers (clear click history)
    */
-  resetAllTasks(currentState: TaskManagerState): TaskManagerState {
+  resetAllTasks(
+    currentState: TaskManagerState,
+    getTimestamp: () => number = () => Date.now()
+  ): TaskManagerState {
     return {
       ...currentState,
       clickHistory: [],
-      lastModified: Date.now()
+      lastModified: getTimestamp()
     }
   },
 
   /**
    * Pause current running task by removing the last click
    */
-  pauseCurrentTask(currentState: TaskManagerState): TaskManagerState {
+  pauseCurrentTask(
+    currentState: TaskManagerState,
+    getTimestamp: () => number = () => Date.now()
+  ): TaskManagerState {
     if (currentState.clickHistory.length === 0) return currentState
     return {
       ...currentState,
       clickHistory: currentState.clickHistory.slice(0, -1),
-      lastModified: Date.now()
+      lastModified: getTimestamp()
     }
   }
 }
