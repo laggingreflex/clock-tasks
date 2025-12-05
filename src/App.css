@@ -230,26 +230,39 @@ form {
   padding-left: 12px;
 }
 
+.user-avatar-container {
+  position: relative;
+  cursor: pointer;
+}
+
 .user-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
+  display: block;
 }
 
 .user-name {
+  display: none;
   margin: 0;
   font-weight: 600;
   color: #333;
 }
 
 .user-email {
+  display: none;
   margin: 0;
   color: #999;
   font-size: 12px;
 }
 
 .logout-btn {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
   padding: 6px 10px;
   background-color: #cc3333;
   color: white;
@@ -257,7 +270,8 @@ form {
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  margin-left: 10px;
+  white-space: nowrap;
+  z-index: 1000;
 }
 
 .logout-btn:hover {

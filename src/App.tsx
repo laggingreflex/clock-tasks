@@ -163,6 +163,7 @@ function App() {
   const [lastAddedTaskId, setLastAddedTaskId] = useState<string | null>(null)
   const [sortMode, setSortMode] = useState<'total' | 'alphabetical'>('total')
   const [now, setNow] = useState(Date.now())
+  const [showUserMenu, setShowUserMenu] = useState(false)
 
   const getTasks = (): Task[] => {
     return taskDataList.map(td => taskDataToTask(td, currentRunningTaskId, now))
@@ -266,10 +267,13 @@ function App() {
       if (deletionMode && !(e.target as HTMLElement).closest('.delete-btn')) {
         setDeletionMode(false)
       }
+      if (showUserMenu && !(e.target as HTMLElement).closest('.user-avatar-container')) {
+        setShowUserMenu(false)
+      }
     }
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
-  }, [deletionMode])
+  }, [deletionMode, showUserMenu])
 
   const startTask = (id: string) => {
     const now = Date.now()
@@ -468,17 +472,18 @@ function App() {
               <h1>Tasks Clock: {formatTime(getTotalElapsedTime())}</h1>
             </div>
             <div className="user-info">
-              <img src={user.picture} alt={user.name} className="user-avatar" />
-              <div>
-                <p className="user-name">{user.name}</p>
-                <p className="user-email">{user.email}</p>
+              <div className="user-avatar-container" onClick={() => setShowUserMenu(!showUserMenu)}>
+                <img src={user.picture} alt={user.name} className="user-avatar" />
+                {showUserMenu && (
+                  <button className="logout-btn" onClick={(e) => {
+                    e.stopPropagation()
+                    setUser(null)
+                    localStorage.removeItem('googleUser')
+                  }}>
+                    🚪 Logout
+                  </button>
+                )}
               </div>
-              <button className="logout-btn" onClick={() => {
-                setUser(null)
-                localStorage.removeItem('googleUser')
-              }}>
-                🚪 Logout
-              </button>
             </div>
           </div>
 
