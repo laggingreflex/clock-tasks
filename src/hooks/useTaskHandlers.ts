@@ -35,13 +35,13 @@ export const useTaskHandlers = (
   const handleStartTask = (id: string) => {
     const taskName = state.tasks.find(t => t.id === id)?.name || 'unknown'
     const currentRunningId = TaskQueries.getCurrentRunningTaskId(state)
-    
+
     // Don't restart a task that's already running
     if (currentRunningId === id) {
       log.debug(`👤 User action: Click on already running task "${taskName}" - ignoring`)
       return
     }
-    
+
     log.log(`👤 User action: Click task "${taskName}"`)
     updateAndSync(TaskOperations.startTask(id, state))
   }
