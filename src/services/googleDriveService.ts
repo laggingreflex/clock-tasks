@@ -5,6 +5,13 @@ declare global {
   }
 }
 
+const PREFIX = '[clock-tasks-drive]'
+const logger = {
+  log: (...args: any[]) => console.log(PREFIX, ...args),
+  debug: (...args: any[]) => console.debug(PREFIX, ...args),
+  error: (...args: any[]) => console.error(PREFIX, ...args)
+}
+
 class GoogleDriveService {
   private accessToken: string | null = null
 
@@ -110,7 +117,7 @@ class GoogleDriveService {
       const createData = await createResponse.json()
 
       // Initialize with empty tasks
-      await this.updateTasksFile(createData.id, { tasks: [], currentRunningTaskId: undefined, lastModified: Date.now() })
+      await this.updateTasksFile(createData.id, { tasks: [], clickHistory: [], lastModified: Date.now() })
 
       return createData.id
     } catch (error) {
@@ -119,7 +126,7 @@ class GoogleDriveService {
     }
   }
 
-  async loadTasks(fileId: string): Promise<{ tasks: any[]; currentRunningTaskId?: string; lastModified?: number }> {
+  async loadTasks(fileId: string): Promise<{ tasks: any[]; clickHistory?: any[]; lastModified?: number }> {
     try {
       const response = await fetch(
         `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
@@ -133,13 +140,15 @@ class GoogleDriveService {
       }
 
       const data = await response.json()
-      return data || { tasks: [] }
+      logger.debug('Loaded from Google Drive:', { hasData: !!data, hasClickHistory: !!data?.clickHistory, clickHistoryLength: data?.clickHistory?.length })
+      return data || { tasks: [], clickHistory: [] }
     } catch (error) {
-      console.error('Error loading tasks from Drive:', error)
-      return { tasks: [] }
+      logger.error('Error loading tasks from Drive:', error)
+      return { tasks: [], clickHistory: [] }
     }
   }  async updateTasksFile(fileId: string, data: any): Promise<void> {
     try {
+      logger.debug('Syncing to Google Drive:', { hasClickHistory: !!data?.clickHistory, clickHistoryLength: data?.clickHistory?.length, taskCount: data?.tasks?.length })
       const response = await fetch(
         `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
         {
@@ -155,8 +164,9 @@ class GoogleDriveService {
       if (!response.ok) {
         throw new Error(`Failed to save tasks: ${response.statusText}`)
       }
+      logger.log('Successfully synced to Google Drive')
     } catch (error) {
-      console.error('Error saving tasks to Drive:', error)
+      logger.error('Error saving tasks to Drive:', error)
       throw error
     }
   }
