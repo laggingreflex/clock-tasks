@@ -1,6 +1,6 @@
 /**
  * Integration tests to expose logic bugs in time calculation
- * 
+ *
  * Scenario: Create 3 tasks (A, B, C) in sequence, then re-select task B
  * This exposes issues with how currentSessionTime and lastSessionTime are calculated
  */
