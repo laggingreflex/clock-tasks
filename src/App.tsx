@@ -3,6 +3,20 @@ import './App.css'
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google'
 import { googleDriveService } from './services/googleDriveService'
 
+interface TaskData {
+  id: string
+  name: string
+  sessionStartTime?: number // Unix timestamp when task was started in current session
+  lastSessionEndTime?: number // Unix timestamp when last session ended
+  totalSessionMs: number // Total milliseconds accumulated across all sessions
+}
+
+interface StoredData {
+  tasks: TaskData[]
+  currentRunningTaskId?: string
+  lastModified: number
+}
+
 interface Task {
   id: string
   name: string
@@ -18,6 +32,27 @@ interface User {
   name: string
   picture: string
   accessToken: string
+}
+
+// Helper to convert TaskData to display Task (with calculated values)
+function taskDataToTask(taskData: TaskData, currentRunningTaskId: string | undefined, now: number): Task {
+  const isRunning = taskData.id === currentRunningTaskId
+  const currentSessionTime = isRunning && taskData.sessionStartTime
+    ? Math.floor((now - taskData.sessionStartTime) / 1000)
+    : 0
+  const lastSessionTime = taskData.sessionStartTime && taskData.lastSessionEndTime && !isRunning
+    ? Math.floor((taskData.lastSessionEndTime - taskData.sessionStartTime) / 1000)
+    : 0
+  const totalTime = Math.floor(taskData.totalSessionMs / 1000) + currentSessionTime
+
+  return {
+    id: taskData.id,
+    name: taskData.name,
+    isRunning,
+    currentSessionTime,
+    lastSessionTime,
+    totalTime
+  }
 }
 
 function formatTime(seconds: number): string {
@@ -58,7 +93,6 @@ function LoginComponent({ onLoginSuccess }: { onLoginSuccess: (user: User) => vo
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse: any) => {
       try {
-        // Get user info from the access token
         const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
           headers: {
             Authorization: `Bearer ${tokenResponse.access_token}`
@@ -100,29 +134,47 @@ function App() {
   const [driveFileId, setDriveFileId] = useState<string | null>(null)
   const [lastSyncTime, setLastSyncTime] = useState<number>(0)
 
-  const [tasks, setTasks] = useState<Task[]>(() => {
+  const [taskDataList, setTaskDataList] = useState<TaskData[]>(() => {
     const saved = localStorage.getItem('clockTasks')
     if (saved) {
-      const data = JSON.parse(saved)
-      return data.tasks || []
+      try {
+        const data = JSON.parse(saved)
+        return data.tasks || []
+      } catch {
+        return []
+      }
     }
     return []
   })
-  const [totalElapsedTime, setTotalElapsedTime] = useState(() => {
+  const [currentRunningTaskId, setCurrentRunningTaskId] = useState<string | undefined>(() => {
     const saved = localStorage.getItem('clockTasks')
     if (saved) {
-      const data = JSON.parse(saved)
-      return data.totalElapsedTime || 0
+      try {
+        const data = JSON.parse(saved)
+        return data.currentRunningTaskId
+      } catch {
+        return undefined
+      }
     }
-    return 0
+    return undefined
   })
+
   const [deletionMode, setDeletionMode] = useState(false)
   const [lastAddedTaskId, setLastAddedTaskId] = useState<string | null>(null)
   const [sortMode, setSortMode] = useState<'total' | 'alphabetical'>('total')
+  const [now, setNow] = useState(Date.now())
 
-  // Initialize Google Drive when user logs in
+  const getTasks = (): Task[] => {
+    return taskDataList.map(td => taskDataToTask(td, currentRunningTaskId, now))
+  }
+
+  const getTotalElapsedTime = (): number => {
+    return getTasks().reduce((sum, t) => sum + t.totalTime, 0)
+  }
+
   useEffect(() => {
     if (user) {
+      googleDriveService.setAccessToken(user.accessToken)
       initializeGoogleDrive()
     }
   }, [user])
@@ -132,32 +184,27 @@ function App() {
     try {
       googleDriveService.setAccessToken(user.accessToken)
       const folderId = await googleDriveService.findOrCreateAppFolder()
-
       const fileId = await googleDriveService.findOrCreateTasksFile(folderId)
       setDriveFileId(fileId)
 
-      // Always load from Google Drive, ignoring localStorage
       const driveData = await googleDriveService.loadTasks(fileId)
-      setTasks(driveData.tasks || [])
-      setTotalElapsedTime(driveData.totalElapsedTime || 0)
+      setTaskDataList(driveData.tasks || [])
+      setCurrentRunningTaskId(driveData.currentRunningTaskId)
       setLastSyncTime(driveData.lastModified || Date.now())
     } catch (error) {
       console.error('Failed to initialize Google Drive:', error)
-      // Fall back to localStorage if Drive fails
     }
   }
 
-  // Periodically check for remote changes (every 10 seconds)
   useEffect(() => {
     if (!user || !driveFileId) return
 
     const interval = setInterval(async () => {
       try {
         const driveData = await googleDriveService.loadTasks(driveFileId)
-        // Simple merge: if remote is newer, use it
         if (driveData.lastModified && driveData.lastModified > lastSyncTime) {
-          setTasks(driveData.tasks || [])
-          setTotalElapsedTime(driveData.totalElapsedTime || 0)
+          setTaskDataList(driveData.tasks || [])
+          setCurrentRunningTaskId(driveData.currentRunningTaskId)
           setLastSyncTime(driveData.lastModified)
         }
       } catch (error) {
@@ -168,29 +215,42 @@ function App() {
     return () => clearInterval(interval)
   }, [user, driveFileId, lastSyncTime])
 
-  const syncToGoogleDrive = async (data: any) => {
+  const syncToGoogleDrive = async (updatedData?: StoredData) => {
     try {
       if (driveFileId && user) {
-        const dataWithTimestamp = {
-          ...data,
+        const dataToSync = updatedData || {
+          tasks: taskDataList,
+          currentRunningTaskId,
           lastModified: Date.now()
         }
-        await googleDriveService.updateTasksFile(driveFileId, dataWithTimestamp)
-        setLastSyncTime(Date.now())
-        localStorage.setItem('clockTasks', JSON.stringify(dataWithTimestamp))
+        if (!dataToSync.lastModified) {
+          dataToSync.lastModified = Date.now()
+        }
+        await googleDriveService.updateTasksFile(driveFileId, dataToSync)
+        setLastSyncTime(dataToSync.lastModified)
+        localStorage.setItem('clockTasks', JSON.stringify(dataToSync))
       }
     } catch (error) {
       console.error('Failed to sync to Google Drive:', error)
-      localStorage.setItem('clockTasks', JSON.stringify(data))
+      localStorage.setItem('clockTasks', JSON.stringify({
+        tasks: taskDataList,
+        currentRunningTaskId,
+        lastModified: Date.now()
+      }))
     }
   }
 
-  // Update document title with total time
   useEffect(() => {
-    document.title = `Tasks Clock: ${formatTime(totalElapsedTime)}`
-  }, [totalElapsedTime])
+    const interval = setInterval(() => {
+      setNow(Date.now())
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
-  // Scroll to newly added task
+  useEffect(() => {
+    document.title = `Tasks Clock: ${formatTime(getTotalElapsedTime())}`
+  }, [getTotalElapsedTime()])
+
   useEffect(() => {
     if (lastAddedTaskId) {
       const element = document.getElementById(`task-${lastAddedTaskId}`)
@@ -201,7 +261,6 @@ function App() {
     }
   }, [lastAddedTaskId])
 
-  // Handle clicking outside to exit deletion mode
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (deletionMode && !(e.target as HTMLElement).closest('.delete-btn')) {
@@ -212,136 +271,142 @@ function App() {
     return () => document.removeEventListener('click', handleClickOutside)
   }, [deletionMode])
 
-  // Timer interval - tick every second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTasks(prevTasks => {
-        const updated = prevTasks.map(task => {
-          if (task.isRunning) {
-            return {
-              ...task,
-              currentSessionTime: task.currentSessionTime + 1,
-              totalTime: task.totalTime + 1
-            }
-          }
-          return task
-        })
-        return updated
-      })
-
-      setTotalElapsedTime((prev: number) => {
-        const hasRunningTask = tasks.some(t => t.isRunning)
-        return hasRunningTask ? prev + 1 : prev
-      })
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [tasks])
-
   const startTask = (id: string) => {
-    setTasks(prevTasks => {
-      const updated = prevTasks.map(task => {
-        if (task.id === id) {
+    const now = Date.now()
+    setTaskDataList(prevList => {
+      const updated = prevList.map(td => {
+        if (td.id === id) {
+          return { ...td, sessionStartTime: now }
+        } else if (td.id === currentRunningTaskId) {
+          const prevSessionDuration = now - (td.sessionStartTime || now)
           return {
-            ...task,
-            isRunning: true,
-            currentSessionTime: 0
-          }
-        } else if (task.isRunning) {
-          return {
-            ...task,
-            isRunning: false,
-            lastSessionTime: task.currentSessionTime,
-            currentSessionTime: 0
+            ...td,
+            sessionStartTime: undefined,
+            lastSessionEndTime: now,
+            totalSessionMs: td.totalSessionMs + prevSessionDuration
           }
         }
-        return task
+        return td
       })
-      // Sync this meaningful change to Drive
-      syncToGoogleDrive({ tasks: updated, totalElapsedTime })
+      setCurrentRunningTaskId(id)
+      syncToGoogleDrive({
+        tasks: updated,
+        currentRunningTaskId: id,
+        lastModified: now
+      })
       return updated
     })
   }
 
   const stopAll = () => {
-    setTasks(prevTasks => {
-      const updated = prevTasks.map(task => ({
-        ...task,
-        isRunning: false,
-        lastSessionTime: task.currentSessionTime,
-        currentSessionTime: 0
-      }))
-      // Sync stop all to Drive
-      syncToGoogleDrive({ tasks: updated, totalElapsedTime })
+    if (!currentRunningTaskId) return
+    const now = Date.now()
+    setTaskDataList(prevList => {
+      const updated = prevList.map(td => {
+        if (td.id === currentRunningTaskId) {
+          const sessionDuration = now - (td.sessionStartTime || now)
+          return {
+            ...td,
+            sessionStartTime: undefined,
+            lastSessionEndTime: now,
+            totalSessionMs: td.totalSessionMs + sessionDuration
+          }
+        }
+        return td
+      })
+      setCurrentRunningTaskId(undefined)
+      syncToGoogleDrive({
+        tasks: updated,
+        currentRunningTaskId: undefined,
+        lastModified: now
+      })
       return updated
     })
   }
 
   const resetAll = () => {
-    setTasks(prevTasks => {
-      const updated = prevTasks.map(task => ({
-        ...task,
-        isRunning: false,
-        currentSessionTime: 0,
-        lastSessionTime: 0,
-        totalTime: 0
+    const now = Date.now()
+    setTaskDataList(prevList => {
+      const reset = prevList.map(td => ({
+        ...td,
+        sessionStartTime: undefined,
+        lastSessionEndTime: undefined,
+        totalSessionMs: 0
       }))
-      // Sync reset to Drive
-      syncToGoogleDrive({ tasks: updated, totalElapsedTime: 0 })
-      return updated
+      setCurrentRunningTaskId(undefined)
+      syncToGoogleDrive({
+        tasks: reset,
+        currentRunningTaskId: undefined,
+        lastModified: now
+      })
+      return reset
     })
-    setTotalElapsedTime(0)
   }
 
   const addTask = (name: string) => {
     if (name.trim()) {
-      const newTask: Task = {
-        id: Date.now().toString(),
-        name: name.trim(),
-        isRunning: true,
-        currentSessionTime: 0,
-        lastSessionTime: 0,
-        totalTime: 0
-      }
-      setTasks(prev => {
-        const updated = prev.map(task => {
-          if (task.isRunning) {
+      const id = Date.now().toString()
+      const now = Date.now()
+      setTaskDataList(prevList => {
+        const updated = prevList.map(td => {
+          if (td.id === currentRunningTaskId) {
+            const sessionDuration = now - (td.sessionStartTime || now)
             return {
-              ...task,
-              isRunning: false,
-              lastSessionTime: task.currentSessionTime,
-              currentSessionTime: 0
+              ...td,
+              sessionStartTime: undefined,
+              lastSessionEndTime: now,
+              totalSessionMs: td.totalSessionMs + sessionDuration
             }
           }
-          return {
-            ...task,
-            isRunning: false
-          }
+          return td
         })
-        const withNewTask = [...updated, newTask]
-        // Sync new task to Drive
-        syncToGoogleDrive({ tasks: withNewTask, totalElapsedTime })
+        const newTaskData: TaskData = {
+          id,
+          name: name.trim(),
+          sessionStartTime: now,
+          totalSessionMs: 0
+        }
+        const withNewTask = [...updated, newTaskData]
+        setCurrentRunningTaskId(id)
+        syncToGoogleDrive({
+          tasks: withNewTask,
+          currentRunningTaskId: id,
+          lastModified: now
+        })
+        setLastAddedTaskId(id)
         return withNewTask
       })
-      setLastAddedTaskId(newTask.id)
     }
   }
 
   const updateTaskName = (id: string, name: string) => {
-    setTasks(prevTasks => {
-      const updated = prevTasks.map(task => (task.id === id ? { ...task, name } : task))
-      // Sync name change to Drive
-      syncToGoogleDrive({ tasks: updated, totalElapsedTime })
+    const now = Date.now()
+    setTaskDataList(prevList => {
+      const updated = prevList.map(td => (td.id === id ? { ...td, name } : td))
+      syncToGoogleDrive({
+        tasks: updated,
+        currentRunningTaskId,
+        lastModified: now
+      })
       return updated
     })
   }
 
   const deleteTask = (id: string) => {
     if (window.confirm('Delete this task?')) {
-      setTasks(prevTasks => {
-        const updated = prevTasks.filter(task => task.id !== id)
-        // Sync deletion to Drive
-        syncToGoogleDrive({ tasks: updated, totalElapsedTime })
+      const now = Date.now()
+      setTaskDataList(prevList => {
+        const updated = prevList.filter(td => td.id !== id)
+        let newCurrentRunningTaskId = currentRunningTaskId
+        if (currentRunningTaskId === id) {
+          newCurrentRunningTaskId = undefined
+        }
+        setCurrentRunningTaskId(newCurrentRunningTaskId)
+        syncToGoogleDrive({
+          tasks: updated,
+          currentRunningTaskId: newCurrentRunningTaskId,
+          lastModified: now
+        })
         return updated
       })
     }
@@ -349,22 +414,20 @@ function App() {
 
   const deleteAllTasks = () => {
     if (window.confirm('Delete all tasks?')) {
-      // Sync deletion to Drive
-      syncToGoogleDrive({ tasks: [], totalElapsedTime: 0 })
-      setTasks([])
-      setTotalElapsedTime(0)
+      const now = Date.now()
+      setTaskDataList([])
+      setCurrentRunningTaskId(undefined)
       setDeletionMode(false)
+      syncToGoogleDrive({
+        tasks: [],
+        currentRunningTaskId: undefined,
+        lastModified: now
+      })
     }
   }
 
   const toggleDeletionMode = () => {
-    if (deletionMode) {
-      // Exiting deletion mode
-      setDeletionMode(false)
-    } else {
-      // Entering deletion mode
-      setDeletionMode(true)
-    }
+    setDeletionMode(!deletionMode)
   }
 
   const handleDeleteAllClick = () => {
@@ -376,7 +439,7 @@ function App() {
   }
 
   const getSortedTasks = () => {
-    const tasksCopy = [...tasks]
+    const tasksCopy = [...getTasks()]
     if (sortMode === 'total') {
       return tasksCopy.sort((a, b) => b.totalTime - a.totalTime)
     } else if (sortMode === 'alphabetical') {
@@ -402,7 +465,7 @@ function App() {
         <div>
           <div className="header">
             <div>
-              <h1>Tasks Clock: {formatTime(totalElapsedTime)}</h1>
+              <h1>Tasks Clock: {formatTime(getTotalElapsedTime())}</h1>
             </div>
             <div className="user-info">
               <img src={user.picture} alt={user.name} className="user-avatar" />
@@ -423,33 +486,33 @@ function App() {
 
           <div className="tasks-list">
             {getSortedTasks().map(task => {
-              const totalTasksTime = tasks.reduce((sum, t) => sum + t.totalTime, 0)
+              const totalTasksTime = getTasks().reduce((sum, t) => sum + t.totalTime, 0)
               const percentage = totalTasksTime > 0 ? ((task.totalTime / totalTasksTime) * 100).toFixed(1) : 0
 
               return (
-              <div className={`task-item ${task.isRunning ? 'running' : ''}`} key={task.id} id={`task-${task.id}`}>
-                <div className="task-inputs">
-                  <input
-                    type="text"
-                    value={task.name}
-                    onChange={(e) => updateTaskName(task.id, e.target.value)}
-                    onFocus={() => !task.isRunning && startTask(task.id)}
-                    placeholder="Task name"
-                  />
-                  {deletionMode && (
-                    <button title="Delete task" className="delete-btn" onClick={() => deleteTask(task.id)}>🗑</button>
-                  )}
+                <div className={`task-item ${task.isRunning ? 'running' : ''}`} key={task.id} id={`task-${task.id}`}>
+                  <div className="task-inputs">
+                    <input
+                      type="text"
+                      value={task.name}
+                      onChange={(e) => updateTaskName(task.id, e.target.value)}
+                      onFocus={() => startTask(task.id)}
+                      placeholder="Task name"
+                    />
+                    {deletionMode && (
+                      <button title="Delete task" className="delete-btn" onClick={() => deleteTask(task.id)}>🗑</button>
+                    )}
+                  </div>
+                  <div className="task-stats">
+                    {task.isRunning ? (
+                      <span>Current: {formatTime(task.currentSessionTime)}</span>
+                    ) : (
+                      <span>Last: {formatTime(task.lastSessionTime)}</span>
+                    )}
+                    <span>Total: {formatTime(task.totalTime)} ({percentage}%)</span>
+                  </div>
                 </div>
-                <div className="task-stats">
-                  {task.isRunning ? (
-                    <span>Current: {formatTime(task.currentSessionTime)}</span>
-                  ) : (
-                    <span>Last: {formatTime(task.lastSessionTime)}</span>
-                  )}
-                  <span>Total: {formatTime(task.totalTime)} ({percentage}%)</span>
-                </div>
-              </div>
-            )
+              )
             })}
           </div>
 

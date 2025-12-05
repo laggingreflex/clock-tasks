@@ -110,7 +110,7 @@ class GoogleDriveService {
       const createData = await createResponse.json()
 
       // Initialize with empty tasks
-      await this.updateTasksFile(createData.id, { tasks: [], totalElapsedTime: 0 })
+      await this.updateTasksFile(createData.id, { tasks: [], currentRunningTaskId: undefined, lastModified: Date.now() })
 
       return createData.id
     } catch (error) {
@@ -119,7 +119,7 @@ class GoogleDriveService {
     }
   }
 
-  async loadTasks(fileId: string): Promise<{ tasks: any[]; totalElapsedTime: number; lastModified?: number }> {
+  async loadTasks(fileId: string): Promise<{ tasks: any[]; currentRunningTaskId?: string; lastModified?: number }> {
     try {
       const response = await fetch(
         `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
@@ -133,10 +133,10 @@ class GoogleDriveService {
       }
 
       const data = await response.json()
-      return data || { tasks: [], totalElapsedTime: 0 }
+      return data || { tasks: [] }
     } catch (error) {
       console.error('Error loading tasks from Drive:', error)
-      return { tasks: [], totalElapsedTime: 0 }
+      return { tasks: [] }
     }
   }  async updateTasksFile(fileId: string, data: any): Promise<void> {
     try {
