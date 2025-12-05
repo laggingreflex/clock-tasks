@@ -224,26 +224,9 @@ function App() {
 
   return (
     <div>
-      <h1>Tasks Clock</h1>
+      <h1>Tasks Clock: {formatTime(totalElapsedTime)}</h1>
 
       <AddTaskForm onAdd={addTask} />
-
-      <div className="controls">
-        <div className="controls-top">
-          <p>Total: {formatTime(totalElapsedTime)}</p>
-          <div className="controls-buttons">
-            <button title="Stop all tasks" onClick={stopAll}>⏹</button>
-            <button title="Reset all tasks" onClick={resetAll}>🔄</button>
-            <button
-              title={deletionMode ? "Delete all tasks" : "Enable deletion mode"}
-              className={`delete-btn ${deletionMode ? 'deletion-active' : ''}`}
-              onClick={handleDeleteAllClick}
-            >
-              🗑
-            </button>
-          </div>
-        </div>
-      </div>
 
       <div className="tasks-list">
         {tasks.map(task => {
@@ -275,7 +258,20 @@ function App() {
           </div>
         )
         })}
+      </div>
 
+      <div className="controls">
+        <div className="controls-buttons">
+          <button title="Stop all tasks" onClick={stopAll}>⏹</button>
+          <button title="Reset all tasks" onClick={resetAll}>🔄</button>
+          <button
+            title={deletionMode ? "Delete all tasks" : "Enable deletion mode"}
+            className={`delete-btn ${deletionMode ? 'deletion-active' : ''}`}
+            onClick={handleDeleteAllClick}
+          >
+            🗑
+          </button>
+        </div>
       </div>
     </div>
   )

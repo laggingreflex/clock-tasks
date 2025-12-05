@@ -67,16 +67,14 @@ p {
   padding: 12px;
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 12px;
+  margin-top: 12px;
   display: flex;
   gap: 12px;
   flex-direction: column;
 }
 
 .controls-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: none;
 }
 
 .controls-buttons {
@@ -131,13 +129,8 @@ p {
 
 .task-stats {
   display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
+  justify-content: space-between;
   align-items: center;
-}
-
-.task-stats span {
-  flex: 0 0 auto;
 }
 
 .task-buttons {
