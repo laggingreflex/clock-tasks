@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google'
-import { jwtDecode } from 'jwt-decode'
 import { googleDriveService } from './services/googleDriveService'
 
 interface Task {
@@ -19,13 +18,6 @@ interface User {
   name: string
   picture: string
   accessToken: string
-}
-
-interface DecodedToken {
-  sub: string
-  email: string
-  name: string
-  picture: string
 }
 
 function formatTime(seconds: number): string {
@@ -66,13 +58,19 @@ function LoginComponent({ onLoginSuccess }: { onLoginSuccess: (user: User) => vo
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse: any) => {
       try {
-        // tokenResponse.access_token is the access token for Drive API
-        const decodedIdToken = jwtDecode<DecodedToken>(tokenResponse.id_token || '')
+        // Get user info from the access token
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`
+          }
+        })
+        const userInfo = await userInfoResponse.json()
+        
         const newUser: User = {
-          id: decodedIdToken.sub,
-          email: decodedIdToken.email,
-          name: decodedIdToken.name,
-          picture: decodedIdToken.picture,
+          id: userInfo.id,
+          email: userInfo.email,
+          name: userInfo.name,
+          picture: userInfo.picture,
           accessToken: tokenResponse.access_token
         }
         onLoginSuccess(newUser)
