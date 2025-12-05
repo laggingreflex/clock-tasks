@@ -1,34 +1,28 @@
-name: Build and Deploy to GitHub Pages
+name: Build and Deploy
 
 on:
   push:
     branches:
       - master
-  pull_request:
-    branches:
-      - master
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Clean install dependencies
-        run: |
-          rm -f package-lock.json
-          npm install
+      - name: Install dependencies
+        run: npm install
 
       - name: Build
         run: npm run build
@@ -36,14 +30,9 @@ jobs:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_GOOGLE_CLIENT_SECRET: ${{ secrets.VITE_GOOGLE_CLIENT_SECRET }}
 
-      - name: Check dist folder
-        run: ls -la dist/
-
       - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-          cname: false
           cname: false
