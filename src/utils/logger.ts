@@ -6,7 +6,7 @@ const PREFIX = '[clock-tasks]'
  */
 export function createLogger(moduleName: string) {
   const modulePrefix = `${PREFIX}[${moduleName}]`
-  
+
   return {
     log: (...args: any[]) => {
       console.log(modulePrefix, ...args)

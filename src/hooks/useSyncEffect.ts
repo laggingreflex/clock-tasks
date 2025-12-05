@@ -30,14 +30,14 @@ export const useSyncEffect = (
       log.debug('Initializing Google Drive...')
       const folderId = await googleDriveService.findOrCreateAppFolder()
       log.debug('Found or created app folder:', folderId)
-      
+
       const fileId = await googleDriveService.findOrCreateTasksFile(folderId)
       log.debug('Found or created tasks file:', fileId)
-      
+
       setDriveFileId(fileId)
       const driveData = await googleDriveService.loadTasks(fileId)
       log.log(`☁️ Google Drive initialized: ${driveData.tasks?.length || 0} tasks, ${driveData.clickHistory?.length || 0} clicks`)
-      
+
       setState({
         tasks: driveData.tasks || [],
         clickHistory: driveData.clickHistory || [],

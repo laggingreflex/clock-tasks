@@ -97,13 +97,13 @@ export const TaskOperations = {
     const timestamp = getTimestamp()
     const taskName = currentState.tasks.find(t => t.id === id)?.name || 'unknown'
     const wasPreviouslyRunning = getRunningTaskId(currentState.clickHistory)
-    
+
     log.log(`▶ Start task: "${taskName}" (id: ${id}) at ${timestamp}ms`)
     if (wasPreviouslyRunning !== id) {
       const prevName = currentState.tasks.find(t => t.id === wasPreviouslyRunning)?.name || 'none'
       log.debug(`startTask - switching from "${prevName}" to "${taskName}"`)
     }
-    
+
     return {
       ...currentState,
       clickHistory: [...currentState.clickHistory, { taskId: id, timestamp }],
@@ -122,7 +122,7 @@ export const TaskOperations = {
   ): TaskManagerState {
     const oldName = currentState.tasks.find(t => t.id === id)?.name || 'unknown'
     log.log(`✏ Rename task: "${oldName}" → "${name}" (id: ${id})`)
-    
+
     return {
       ...currentState,
       tasks: currentState.tasks.map(td => (td.id === id ? { ...td, name } : td)),
@@ -140,9 +140,9 @@ export const TaskOperations = {
   ): TaskManagerState {
     const taskName = currentState.tasks.find(t => t.id === id)?.name || 'unknown'
     const clicksRemoved = currentState.clickHistory.filter(e => e.taskId === id).length
-    
+
     log.log(`🗑 Delete task: "${taskName}" (id: ${id}) - removed ${clicksRemoved} click events`)
-    
+
     return {
       ...currentState,
       tasks: currentState.tasks.filter(td => td.id !== id),
@@ -176,7 +176,7 @@ export const TaskOperations = {
     const tasksCount = currentState.tasks.length
     const clicksCount = currentState.clickHistory.length
     log.log(`⟲ Reset all timers - clearing ${clicksCount} click events for ${tasksCount} tasks`)
-    
+
     return {
       ...currentState,
       clickHistory: [],
@@ -195,11 +195,11 @@ export const TaskOperations = {
       log.debug('pauseCurrentTask: no clicks to remove')
       return currentState
     }
-    
+
     const lastClick = currentState.clickHistory[currentState.clickHistory.length - 1]
     const taskName = currentState.tasks.find(t => t.id === lastClick.taskId)?.name || 'unknown'
     log.log(`⏸ Pause task: "${taskName}" (id: ${lastClick.taskId})`)
-    
+
     return {
       ...currentState,
       clickHistory: currentState.clickHistory.slice(0, -1),
@@ -249,7 +249,7 @@ export const TaskQueries = {
       lastSessionTime: !isRunning ? stats.currentSessionTime : 0,
       totalTime: stats.totalTime
     }
-    
+
     log.debug(`getTask: "${taskData.name}" - running: ${isRunning}, total: ${stats.totalTime}s`)
     return task
   },
