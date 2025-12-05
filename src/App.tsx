@@ -196,11 +196,11 @@ function App() {
       <div className="controls">
         <div className="controls-top">
           <p>Total: {formatTime(totalElapsedTime)}</p>
-        </div>
-        <div className="controls-buttons">
-          <button onClick={stopAll}>Stop All</button>
-          <button onClick={resetAll}>Reset All</button>
-          <button onClick={deleteAllTasks}>Delete All</button>
+          <div className="controls-buttons">
+            <button title="Stop all tasks" onClick={stopAll}>⏹</button>
+            <button title="Reset all tasks" onClick={resetAll}>🔄</button>
+            <button title="Delete all tasks" className="delete-btn" onClick={deleteAllTasks}>🗑🗑🗑</button>
+          </div>
         </div>
       </div>
 
@@ -218,6 +218,10 @@ function App() {
                 onChange={(e) => updateTaskName(task.id, e.target.value)}
                 placeholder="Task name"
               />
+              <button title={task.isRunning ? "Stop task" : "Start task"} onClick={() => startTask(task.id)}>
+                {task.isRunning ? '⏸' : '▶'}
+              </button>
+              <button title="Delete task" className="delete-btn" onClick={() => deleteTask(task.id)}>🗑</button>
             </div>
             <div className="task-stats">
               {task.isRunning ? (
@@ -226,12 +230,6 @@ function App() {
                 <span>Last: {formatTime(task.lastSessionTime)}</span>
               )}
               <span>Total: {formatTime(task.totalTime)} ({percentage}%)</span>
-            </div>
-            <div className="task-buttons">
-              <button onClick={() => startTask(task.id)}>
-                {task.isRunning ? 'Running' : 'Start'}
-              </button>
-              <button className="delete-btn" onClick={() => deleteTask(task.id)}>Delete</button>
             </div>
           </div>
         )
@@ -264,7 +262,7 @@ function AddTaskForm({ onAdd }: AddTaskFormProps) {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Add new task"
         />
-        <button type="submit">Add Task</button>
+        <button type="submit" title="Add new task">➕</button>
       </div>
     </form>
   )

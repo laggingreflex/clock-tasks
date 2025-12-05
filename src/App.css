@@ -12,14 +12,15 @@ h1 {
 }
 
 button {
-  padding: 8px 14px;
+  padding: 6px 10px;
   background-color: #0066cc;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 500;
+  min-width: fit-content;
 }
 
 button:hover {
@@ -75,17 +76,19 @@ p {
 .controls-top {
   display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 
 .controls-buttons {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: nowrap;
+  align-items: center;
 }
 
 .controls-buttons button {
   margin: 0;
-  min-width: fit-content;
+  padding: 4px 8px;
 }
 
 .tasks-list {
@@ -107,13 +110,18 @@ p {
 
 .task-inputs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
 .task-inputs input {
   flex: 1;
   min-width: 120px;
+}
+
+.task-inputs button {
+  padding: 4px 8px;
+  margin: 0;
 }
 
 .task-stats {
@@ -128,15 +136,7 @@ p {
 }
 
 .task-buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: nowrap;
-  align-items: center;
-}
-
-.task-buttons button {
-  margin: 0;
-  min-width: fit-content;
+  display: none;
 }
 
 .delete-btn {
@@ -163,7 +163,7 @@ form {
 
 .form-inputs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
@@ -173,6 +173,7 @@ form {
 }
 
 .form-inputs button {
+  padding: 4px 8px;
+  margin: 0;
   flex: 0 0 auto;
-  white-space: nowrap;
 }
