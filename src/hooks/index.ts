@@ -1,4 +1,9 @@
 import { useEffect } from 'react'
+export { useTaskState } from './useTaskState'
+export { useUIState } from './useUIState'
+export { useSyncEffect } from './useSyncEffect'
+export { useTaskHandlers } from './useTaskHandlers'
+export { useSortedTasks } from './useSortedTasks'
 
 /**
  * Hook to handle click outside for modals/menus
@@ -53,21 +58,4 @@ export function useCurrentTime(onTimeUpdate: (now: number) => void) {
     }, 1000)
     return () => clearInterval(interval)
   }, [onTimeUpdate])
-}
-
-/**
- * Hook to handle sorting tasks
- */
-export function useSortedTasks(
-  tasks: Array<{ id: string; name: string; totalTime: number }>,
-  sortMode: 'total' | 'alphabetical'
-) {
-  return tasks.slice().sort((a, b) => {
-    if (sortMode === 'total') {
-      return b.totalTime - a.totalTime
-    } else if (sortMode === 'alphabetical') {
-      return a.name.localeCompare(b.name)
-    }
-    return 0
-  })
 }
