@@ -11,13 +11,13 @@ import type { TaskData, ClickEvent, StoredData } from '../types';
 
 describe('taskOperations', () => {
   let taskDataList: TaskData[];
-  let clickHistory: ClickEvent[];
+  let history: ClickEvent[];
   let mockOnSync: ReturnType<typeof vi.fn<(data: StoredData) => Promise<void>>>;
   let mockOnTaskAdded: ReturnType<typeof vi.fn<(id: string) => void>>;
 
   beforeEach(() => {
     taskDataList = [];
-    clickHistory = [];
+    history = [];
     mockOnSync = vi.fn().mockResolvedValue(undefined);
     mockOnTaskAdded = vi.fn();
     vi.useFakeTimers();
@@ -31,7 +31,7 @@ describe('taskOperations', () => {
     it('should create a new task with generated id', () => {
       vi.setSystemTime(1000);
 
-      addTask('New Task', taskDataList, clickHistory, mockOnTaskAdded, mockOnSync);
+      addTask('New Task', taskDataList, history, mockOnTaskAdded, mockOnSync);
 
       expect(mockOnTaskAdded).toHaveBeenCalledWith('1000');
       expect(mockOnSync).toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe('taskOperations', () => {
     it('should trim task name', () => {
       vi.setSystemTime(1000);
 
-      addTask('  Task With Spaces  ', taskDataList, clickHistory, mockOnTaskAdded, mockOnSync);
+      addTask('  Task With Spaces  ', taskDataList, history, mockOnTaskAdded, mockOnSync);
 
       const savedData = mockOnSync.mock.calls[0][0];
       expect(savedData.tasks[0].name).toBe('Task With Spaces');
@@ -53,19 +53,19 @@ describe('taskOperations', () => {
     it('should start the task immediately', () => {
       vi.setSystemTime(1000);
 
-      addTask('New Task', taskDataList, clickHistory, mockOnTaskAdded, mockOnSync);
+      addTask('New Task', taskDataList, history, mockOnTaskAdded, mockOnSync);
 
       const savedData = mockOnSync.mock.calls[0][0];
-      expect(savedData.clickHistory).toHaveLength(1);
-      expect(savedData.clickHistory[0].taskId).toBe('1000');
-      expect(savedData.clickHistory[0].timestamp).toBe(1000);
+      expect(savedData.history).toHaveLength(1);
+      expect(savedData.history[0].taskId).toBe('1000');
+      expect(savedData.history[0].timestamp).toBe(1000);
     });
 
     it('should preserve existing tasks', () => {
       taskDataList = [{ id: '1', name: 'Existing Task' }];
       vi.setSystemTime(2000);
 
-      addTask('New Task', taskDataList, clickHistory, mockOnTaskAdded, mockOnSync);
+      addTask('New Task', taskDataList, history, mockOnTaskAdded, mockOnSync);
 
       const savedData = mockOnSync.mock.calls[0][0];
       expect(savedData.tasks).toHaveLength(2);
@@ -73,26 +73,26 @@ describe('taskOperations', () => {
     });
 
     it('should not add empty or whitespace-only task names', () => {
-      addTask('', taskDataList, clickHistory, mockOnTaskAdded, mockOnSync);
-      addTask('   ', taskDataList, clickHistory, mockOnTaskAdded, mockOnSync);
+      addTask('', taskDataList, history, mockOnTaskAdded, mockOnSync);
+      addTask('   ', taskDataList, history, mockOnTaskAdded, mockOnSync);
 
       expect(mockOnSync).not.toHaveBeenCalled();
       expect(mockOnTaskAdded).not.toHaveBeenCalled();
     });
 
     it('should preserve existing click history', () => {
-      clickHistory = [
+      history = [
         { taskId: '1', timestamp: 500 },
         { taskId: '2', timestamp: 800 },
       ];
       vi.setSystemTime(1000);
 
-      addTask('New Task', taskDataList, clickHistory, mockOnTaskAdded, mockOnSync);
+      addTask('New Task', taskDataList, history, mockOnTaskAdded, mockOnSync);
 
       const savedData = mockOnSync.mock.calls[0][0];
-      expect(savedData.clickHistory).toHaveLength(3);
-      expect(savedData.clickHistory[0]).toEqual({ taskId: '1', timestamp: 500 });
-      expect(savedData.clickHistory[2]).toEqual({ taskId: '1000', timestamp: 1000 });
+      expect(savedData.history).toHaveLength(3);
+      expect(savedData.history[0]).toEqual({ taskId: '1', timestamp: 500 });
+      expect(savedData.history[2]).toEqual({ taskId: '1000', timestamp: 1000 });
     });
   });
 
@@ -100,23 +100,23 @@ describe('taskOperations', () => {
     it('should add click to history', () => {
       vi.setSystemTime(1000);
 
-      startTask('task1', taskDataList, clickHistory, mockOnSync);
+      startTask('task1', taskDataList, history, mockOnSync);
 
       const savedData = mockOnSync.mock.calls[0][0];
-      expect(savedData.clickHistory).toHaveLength(1);
-      expect(savedData.clickHistory[0]).toEqual({ taskId: 'task1', timestamp: 1000 });
+      expect(savedData.history).toHaveLength(1);
+      expect(savedData.history[0]).toEqual({ taskId: 'task1', timestamp: 1000 });
     });
 
     it('should preserve existing history', () => {
-      clickHistory = [{ taskId: 'task1', timestamp: 500 }];
+      history = [{ taskId: 'task1', timestamp: 500 }];
       vi.setSystemTime(1000);
 
-      startTask('task2', taskDataList, clickHistory, mockOnSync);
+      startTask('task2', taskDataList, history, mockOnSync);
 
       const savedData = mockOnSync.mock.calls[0][0];
-      expect(savedData.clickHistory).toHaveLength(2);
-      expect(savedData.clickHistory[0]).toEqual({ taskId: 'task1', timestamp: 500 });
-      expect(savedData.clickHistory[1]).toEqual({ taskId: 'task2', timestamp: 1000 });
+      expect(savedData.history).toHaveLength(2);
+      expect(savedData.history[0]).toEqual({ taskId: 'task1', timestamp: 500 });
+      expect(savedData.history[1]).toEqual({ taskId: 'task2', timestamp: 1000 });
     });
 
     it('should preserve task data list', () => {
@@ -125,7 +125,7 @@ describe('taskOperations', () => {
         { id: 'task2', name: 'Task 2' },
       ];
 
-      startTask('task1', taskDataList, clickHistory, mockOnSync);
+      startTask('task1', taskDataList, history, mockOnSync);
 
       const savedData = mockOnSync.mock.calls[0][0];
       expect(savedData.tasks).toEqual(taskDataList);
@@ -136,7 +136,7 @@ describe('taskOperations', () => {
     it('should update task name', () => {
       taskDataList = [{ id: 'task1', name: 'Old Name' }];
 
-      const updated = updateTaskName('task1', 'New Name', taskDataList, clickHistory, mockOnSync);
+      const updated = updateTaskName('task1', 'New Name', taskDataList, history, mockOnSync);
 
       expect(updated[0].name).toBe('New Name');
       expect(mockOnSync).toHaveBeenCalled();
@@ -148,7 +148,7 @@ describe('taskOperations', () => {
         { id: 'task2', name: 'Task 2' },
       ];
 
-      const updated = updateTaskName('task1', 'Updated', taskDataList, clickHistory, mockOnSync);
+      const updated = updateTaskName('task1', 'Updated', taskDataList, history, mockOnSync);
 
       expect(updated[0].name).toBe('Updated');
       expect(updated[1].name).toBe('Task 2');
@@ -157,7 +157,7 @@ describe('taskOperations', () => {
     it('should return updated list', () => {
       taskDataList = [{ id: 'task1', name: 'Old' }];
 
-      const result = updateTaskName('task1', 'New', taskDataList, clickHistory, mockOnSync);
+      const result = updateTaskName('task1', 'New', taskDataList, history, mockOnSync);
 
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('New');
@@ -175,7 +175,7 @@ describe('taskOperations', () => {
         { id: 'task2', name: 'Task 2' },
       ];
 
-      const result = deleteTask('task1', taskDataList, clickHistory, mockOnSync);
+      const result = deleteTask('task1', taskDataList, history, mockOnSync);
 
       expect(result.tasks).toHaveLength(1);
       expect(result.tasks[0].id).toBe('task2');
@@ -183,12 +183,12 @@ describe('taskOperations', () => {
 
     it('should remove task from click history', () => {
       taskDataList = [{ id: 'task1', name: 'Task 1' }];
-      clickHistory = [
+      history = [
         { taskId: 'task1', timestamp: 1000 },
         { taskId: 'task2', timestamp: 2000 },
       ];
 
-      const result = deleteTask('task1', taskDataList, clickHistory, mockOnSync);
+      const result = deleteTask('task1', taskDataList, history, mockOnSync);
 
       expect(result.history).toHaveLength(1);
       expect(result.history[0].taskId).toBe('task2');
@@ -198,7 +198,7 @@ describe('taskOperations', () => {
       vi.stubGlobal('confirm', vi.fn().mockReturnValue(false));
       taskDataList = [{ id: 'task1', name: 'Task 1' }];
 
-      const result = deleteTask('task1', taskDataList, clickHistory, mockOnSync);
+      const result = deleteTask('task1', taskDataList, history, mockOnSync);
 
       expect(result.tasks).toEqual(taskDataList);
       expect(mockOnSync).not.toHaveBeenCalled();
@@ -207,7 +207,7 @@ describe('taskOperations', () => {
     it('should sync data after deletion', () => {
       taskDataList = [{ id: 'task1', name: 'Task 1' }];
 
-      deleteTask('task1', taskDataList, clickHistory, mockOnSync);
+      deleteTask('task1', taskDataList, history, mockOnSync);
 
       expect(mockOnSync).toHaveBeenCalled();
       const savedData = mockOnSync.mock.calls[0][0];
@@ -226,16 +226,16 @@ describe('taskOperations', () => {
         { id: 'task2', name: 'Task 2' },
       ];
 
-      const result = deleteAllTasks(taskDataList, clickHistory, mockOnSync);
+      const result = deleteAllTasks(taskDataList, history, mockOnSync);
 
       expect(result.tasks).toEqual([]);
     });
 
     it('should clear click history', () => {
       taskDataList = [{ id: 'task1', name: 'Task 1' }];
-      clickHistory = [{ taskId: 'task1', timestamp: 1000 }];
+      history = [{ taskId: 'task1', timestamp: 1000 }];
 
-      const result = deleteAllTasks(taskDataList, clickHistory, mockOnSync);
+      const result = deleteAllTasks(taskDataList, history, mockOnSync);
 
       expect(result.history).toEqual([]);
     });
@@ -244,7 +244,7 @@ describe('taskOperations', () => {
       vi.stubGlobal('confirm', vi.fn().mockReturnValue(false));
       taskDataList = [{ id: 'task1', name: 'Task 1' }];
 
-      const result = deleteAllTasks(taskDataList, clickHistory, mockOnSync);
+      const result = deleteAllTasks(taskDataList, history, mockOnSync);
 
       expect(result.tasks).toEqual(taskDataList);
       expect(mockOnSync).not.toHaveBeenCalled();
@@ -257,7 +257,7 @@ describe('taskOperations', () => {
         { id: 'task1', name: 'Task 1' },
         { id: 'task2', name: 'Task 2' },
       ];
-      clickHistory = [
+      history = [
         { taskId: 'task1', timestamp: 1000 },
         { taskId: 'task2', timestamp: 2000 },
       ];
@@ -267,7 +267,7 @@ describe('taskOperations', () => {
       expect(mockOnSync).toHaveBeenCalled();
       const savedData = mockOnSync.mock.calls[0][0];
       expect(savedData.tasks).toEqual(taskDataList);
-      expect(savedData.clickHistory).toEqual([]);
+      expect(savedData.history).toEqual([]);
     });
 
     it('should set lastModified timestamp', () => {

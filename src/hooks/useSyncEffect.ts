@@ -36,11 +36,11 @@ export const useSyncEffect = (
 
       setDriveFileId(fileId)
       const driveData = await googleDriveService.loadTasks(fileId)
-      log.log(`☁️ Google Drive initialized: ${driveData.tasks?.length || 0} tasks, ${driveData.clickHistory?.length || 0} clicks`)
+      log.log(`☁️ Google Drive initialized: ${driveData.tasks?.length || 0} tasks, ${driveData.history?.length || 0} clicks`)
 
       setState({
         tasks: driveData.tasks || [],
-        clickHistory: driveData.clickHistory || [],
+        history: driveData.history || [],
         lastModified: driveData.lastModified || Date.now()
       })
       setLastSyncTime(driveData.lastModified || Date.now())
@@ -55,7 +55,7 @@ export const useSyncEffect = (
       if (fileId && user) {
         log.debug(`Syncing to Google Drive (fileId: ${fileId})...`)
         await googleDriveService.updateTasksFile(fileId, dataToSync)
-        log.log(`☁️ Google Drive sync: ${dataToSync.tasks.length} tasks, ${dataToSync.clickHistory.length} clicks`)
+        log.log(`☁️ Google Drive sync: ${dataToSync.tasks.length} tasks, ${dataToSync.history.length} clicks`)
         setLastSyncTime(dataToSync.lastModified)
         saveToLocalStorage(dataToSync)
       } else {

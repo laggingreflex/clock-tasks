@@ -23,7 +23,7 @@ src/core/
 All operations return **new state objects** instead of mutating:
 
 ```typescript
-const state = { tasks: [...], clickHistory: [...], lastModified: 0 }
+const state = { tasks: [...], history: [...], lastModified: 0 }
 const newState = TaskOperations.addAndStartTask('My Task', state)
 // state is unchanged, newState is new
 ```
@@ -34,7 +34,7 @@ All calculations are **pure** - no side effects, no external dependencies:
 
 ```typescript
 // Always returns the same output for the same input
-const stats = calculateTaskStats(taskId, clickHistory, now)
+const stats = calculateTaskStats(taskId, history, now)
 ```
 
 ### 3. Pluggable Storage
@@ -71,7 +71,7 @@ import {
 // Initialize state
 const state = {
   tasks: [],
-  clickHistory: [],
+  history: [],
   lastModified: Date.now()
 }
 
@@ -135,13 +135,13 @@ const exists = TaskQueries.taskExists('task-id-123', state)
 // Save state
 await storage.save({
   tasks: state.tasks,
-  clickHistory: state.clickHistory,
+  history: state.history,
   lastModified: state.lastModified
 })
 
 // Load state
 const data = await storage.load()
-console.log(data.tasks, data.clickHistory)
+console.log(data.tasks, data.history)
 
 // Clear storage
 await storage.clear()
@@ -193,7 +193,7 @@ interface Task {
 ```typescript
 interface StoredData {
   tasks: TaskData[]           // All tasks
-  clickHistory: ClickEvent[]  // Chronological click history
+  history: ClickEvent[]  // Chronological click history
   lastModified: number        // Last modification timestamp
 }
 ```
@@ -228,8 +228,8 @@ All operations follow this pattern:
 // Process: compute new state
 // Output: new state object (immutable)
 
-TaskOperations.startTask(taskId, currentState) 
-  → returns new state with updated clickHistory
+TaskOperations.startTask(taskId, currentState)
+  → returns new state with updated history
 ```
 
 ## React Integration Example
@@ -239,7 +239,7 @@ import { useState, useEffect } from 'react'
 import { TaskOperations, TaskQueries, LocalStorageBackend } from '@/core'
 
 function TaskApp() {
-  const [state, setState] = useState({ tasks: [], clickHistory: [], lastModified: 0 })
+  const [state, setState] = useState({ tasks: [], history: [], lastModified: 0 })
   const [now, setNow] = useState(Date.now())
   const storage = new LocalStorageBackend()
 
@@ -259,7 +259,7 @@ function TaskApp() {
     setState(newState)
     storage.save({
       tasks: newState.tasks,
-      clickHistory: newState.clickHistory,
+      history: newState.history,
       lastModified: newState.lastModified
     })
   }
@@ -289,10 +289,10 @@ import { TaskOperations, TaskQueries, LocalStorageBackend, formatTime } from '@/
 async function main() {
   const storage = new LocalStorageBackend()
   const data = await storage.load()
-  
+
   let state = {
     tasks: data.tasks,
-    clickHistory: data.clickHistory,
+    history: data.history,
     lastModified: data.lastModified
   }
 
@@ -322,7 +322,7 @@ Since all functions are pure, testing is simple:
 import { TaskOperations, TaskQueries } from '@/core'
 
 test('add task', () => {
-  const state = { tasks: [], clickHistory: [], lastModified: 0 }
+  const state = { tasks: [], history: [], lastModified: 0 }
   const newState = TaskOperations.addTask('Test', state)
   expect(newState.tasks).toHaveLength(1)
   expect(newState.tasks[0].name).toBe('Test')

@@ -6,12 +6,12 @@ import { createLogger } from '../utils/logger'
 const log = createLogger('useTaskState')
 
 export const useTaskState = () => {
-  const { tasks: initialTasks, clickHistory: initialClickHistory } = loadFromLocalStorage()
+  const { tasks: initialTasks, history: initialhistory } = loadFromLocalStorage()
   const hasLoggedInit = useRef(false)
 
   const [state, setState] = useState<TaskManagerState>({
     tasks: initialTasks,
-    clickHistory: initialClickHistory,
+    history: initialhistory,
     lastModified: Date.now()
   })
 

@@ -8,7 +8,7 @@ describe('TaskOperations', () => {
   beforeEach(() => {
     state = {
       tasks: [],
-      clickHistory: [],
+      history: [],
       lastModified: Date.now(),
     };
     vi.useFakeTimers();
@@ -81,8 +81,8 @@ describe('TaskOperations', () => {
       const newState = TaskOperations.addAndStartTask('My Task', state);
 
       expect(newState.tasks).toHaveLength(1);
-      expect(newState.clickHistory).toHaveLength(1);
-      expect(newState.clickHistory[0].taskId).toBe('1000');
+      expect(newState.history).toHaveLength(1);
+      expect(newState.history[0].taskId).toBe('1000');
     });
 
     it('should return unchanged state for empty task name', () => {
@@ -95,17 +95,17 @@ describe('TaskOperations', () => {
 
       const newState = TaskOperations.addAndStartTask('Task', state);
 
-      expect(newState.clickHistory[0].timestamp).toBe(3000);
+      expect(newState.history[0].timestamp).toBe(3000);
     });
 
     it('should preserve existing history', () => {
-      state.clickHistory = [{ taskId: 'old', timestamp: 500 }];
+      state.history = [{ taskId: 'old', timestamp: 500 }];
       vi.setSystemTime(1000);
 
       const newState = TaskOperations.addAndStartTask('Task', state);
 
-      expect(newState.clickHistory).toHaveLength(2);
-      expect(newState.clickHistory[0].taskId).toBe('old');
+      expect(newState.history).toHaveLength(2);
+      expect(newState.history[0].taskId).toBe('old');
     });
   });
 
@@ -115,8 +115,8 @@ describe('TaskOperations', () => {
 
       const newState = TaskOperations.startTask('task1', state);
 
-      expect(newState.clickHistory).toHaveLength(1);
-      expect(newState.clickHistory[0].taskId).toBe('task1');
+      expect(newState.history).toHaveLength(1);
+      expect(newState.history[0].taskId).toBe('task1');
     });
 
     it('should preserve existing tasks', () => {
@@ -128,14 +128,14 @@ describe('TaskOperations', () => {
     });
 
     it('should preserve existing click history', () => {
-      state.clickHistory = [{ taskId: 'task1', timestamp: 500 }];
+      state.history = [{ taskId: 'task1', timestamp: 500 }];
       vi.setSystemTime(1000);
 
       const newState = TaskOperations.startTask('task2', state);
 
-      expect(newState.clickHistory).toHaveLength(2);
-      expect(newState.clickHistory[0].taskId).toBe('task1');
-      expect(newState.clickHistory[1].taskId).toBe('task2');
+      expect(newState.history).toHaveLength(2);
+      expect(newState.history[0].taskId).toBe('task1');
+      expect(newState.history[1].taskId).toBe('task2');
     });
 
     it('should update lastModified', () => {
@@ -170,11 +170,11 @@ describe('TaskOperations', () => {
 
     it('should preserve click history', () => {
       state.tasks = [{ id: 'task1', name: 'Task' }];
-      state.clickHistory = [{ taskId: 'task1', timestamp: 1000 }];
+      state.history = [{ taskId: 'task1', timestamp: 1000 }];
 
       const newState = TaskOperations.updateTaskName('task1', 'New Name', state);
 
-      expect(newState.clickHistory).toEqual(state.clickHistory);
+      expect(newState.history).toEqual(state.history);
     });
 
     it('should update lastModified', () => {
@@ -210,7 +210,7 @@ describe('TaskOperations', () => {
 
     it('should remove task clicks from history', () => {
       state.tasks = [{ id: 'task1', name: 'Task 1' }];
-      state.clickHistory = [
+      state.history = [
         { taskId: 'task1', timestamp: 1000 },
         { taskId: 'task2', timestamp: 2000 },
         { taskId: 'task1', timestamp: 3000 },
@@ -218,8 +218,8 @@ describe('TaskOperations', () => {
 
       const newState = TaskOperations.deleteTask('task1', state);
 
-      expect(newState.clickHistory).toHaveLength(1);
-      expect(newState.clickHistory[0].taskId).toBe('task2');
+      expect(newState.history).toHaveLength(1);
+      expect(newState.history[0].taskId).toBe('task2');
     });
 
     it('should update lastModified', () => {
@@ -253,14 +253,14 @@ describe('TaskOperations', () => {
     });
 
     it('should clear click history', () => {
-      state.clickHistory = [
+      state.history = [
         { taskId: 'task1', timestamp: 1000 },
         { taskId: 'task2', timestamp: 2000 },
       ];
 
       const newState = TaskOperations.deleteAllTasks(state);
 
-      expect(newState.clickHistory).toEqual([]);
+      expect(newState.history).toEqual([]);
     });
 
     it('should update lastModified', () => {
@@ -274,7 +274,7 @@ describe('TaskOperations', () => {
 
   describe('resetAllTasks', () => {
     it('should clear click history', () => {
-      state.clickHistory = [
+      state.history = [
         { taskId: 'task1', timestamp: 1000 },
         { taskId: 'task2', timestamp: 2000 },
       ];
@@ -285,7 +285,7 @@ describe('TaskOperations', () => {
 
       const newState = TaskOperations.resetAllTasks(state);
 
-      expect(newState.clickHistory).toEqual([]);
+      expect(newState.history).toEqual([]);
       expect(newState.tasks).toEqual(state.tasks);
     });
 
@@ -300,15 +300,15 @@ describe('TaskOperations', () => {
 
   describe('pauseCurrentTask', () => {
     it('should remove last click', () => {
-      state.clickHistory = [
+      state.history = [
         { taskId: 'task1', timestamp: 1000 },
         { taskId: 'task2', timestamp: 2000 },
       ];
 
       const newState = TaskOperations.pauseCurrentTask(state);
 
-      expect(newState.clickHistory).toHaveLength(1);
-      expect(newState.clickHistory[0].taskId).toBe('task1');
+      expect(newState.history).toHaveLength(1);
+      expect(newState.history[0].taskId).toBe('task1');
     });
 
     it('should return unchanged state for empty history', () => {
@@ -317,7 +317,7 @@ describe('TaskOperations', () => {
     });
 
     it('should update lastModified', () => {
-      state.clickHistory = [{ taskId: 'task1', timestamp: 1000 }];
+      state.history = [{ taskId: 'task1', timestamp: 1000 }];
       vi.setSystemTime(7000);
 
       const newState = TaskOperations.pauseCurrentTask(state);
@@ -331,7 +331,7 @@ describe('Your Scenario: A → B → C → A', () => {
   it('should handle task switching with proper time calculation', () => {
     let state: TaskManagerState = {
       tasks: [],
-      clickHistory: [],
+      history: [],
       lastModified: 0,
     };
     let now = 1000;
@@ -342,8 +342,8 @@ describe('Your Scenario: A → B → C → A', () => {
     expect(tasks[0].name).toBe('A');
     expect(tasks[0].isRunning).toBe(true);
     expect(tasks[0].currentSessionTime).toBe(0);
-    expect(state.clickHistory).toHaveLength(1);
-    expect(state.clickHistory[0].taskId).toBe(state.tasks[0].id);
+    expect(state.history).toHaveLength(1);
+    expect(state.history[0].taskId).toBe(state.tasks[0].id);
 
     // Step 2: Add task B at t=5000 (B starts, A should show 4-5s elapsed)
     now = 5000;
@@ -355,7 +355,7 @@ describe('Your Scenario: A → B → C → A', () => {
     expect(tasks[1].name).toBe('B');
     expect(tasks[1].isRunning).toBe(true);
     expect(tasks[1].currentSessionTime).toBe(0);
-    expect(state.clickHistory).toHaveLength(2);
+    expect(state.history).toHaveLength(2);
 
     // Step 3: Add task C at t=10000 (C starts, B should show 5s elapsed)
     now = 10000;
@@ -368,7 +368,7 @@ describe('Your Scenario: A → B → C → A', () => {
     expect(tasks[1].lastSessionTime).toBe(5); // 10000 - 5000 = 5000ms = 5s
     expect(tasks[2].name).toBe('C');
     expect(tasks[2].isRunning).toBe(true);
-    expect(state.clickHistory).toHaveLength(3);
+    expect(state.history).toHaveLength(3);
 
     // Step 4: Click A again at t=15000
     now = 15000;
@@ -377,7 +377,7 @@ describe('Your Scenario: A → B → C → A', () => {
     tasks = TaskQueries.getAllTasks(state, now);
 
     console.log('\n=== AFTER CLICKING A AGAIN ===');
-    console.log('Click history:', state.clickHistory);
+    console.log('Click history:', state.history);
     console.log('Task A:', tasks[0]);
     console.log('Task B:', tasks[1]);
     console.log('Task C:', tasks[2]);
@@ -391,7 +391,7 @@ describe('Your Scenario: A → B → C → A', () => {
     // it displays its most recent session duration as lastSessionTime
     expect(tasks[2].isRunning).toBe(false); // C stopped
     expect(tasks[0].isRunning).toBe(true); // A is running again
-    expect(state.clickHistory).toHaveLength(4); // All clicks are preserved for accurate time calculation
+    expect(state.history).toHaveLength(4); // All clicks are preserved for accurate time calculation
   });
 });
 
@@ -403,7 +403,7 @@ describe('TaskQueries', () => {
     now = Date.now();
     state = {
       tasks: [],
-      clickHistory: [],
+      history: [],
       lastModified: now,
     };
   });
@@ -419,7 +419,7 @@ describe('TaskQueries', () => {
         { id: 'task1', name: 'Task 1' },
         { id: 'task2', name: 'Task 2' },
       ];
-      state.clickHistory = [
+      state.history = [
         { taskId: 'task1', timestamp: now - 5000 },
         { taskId: 'task2', timestamp: now - 2000 },
       ];
@@ -458,7 +458,7 @@ describe('TaskQueries', () => {
 
     it('should mark task as running if most recent click', () => {
       state.tasks = [{ id: 'task1', name: 'Task 1' }];
-      state.clickHistory = [{ taskId: 'task1', timestamp: now - 5000 }];
+      state.history = [{ taskId: 'task1', timestamp: now - 5000 }];
 
       const task = TaskQueries.getTask('task1', state, now);
 
@@ -467,7 +467,7 @@ describe('TaskQueries', () => {
 
     it('should calculate current session time correctly', () => {
       state.tasks = [{ id: 'task1', name: 'Task 1' }];
-      state.clickHistory = [{ taskId: 'task1', timestamp: now - 10000 }];
+      state.history = [{ taskId: 'task1', timestamp: now - 10000 }];
 
       const task = TaskQueries.getTask('task1', state, now);
 
@@ -482,7 +482,7 @@ describe('TaskQueries', () => {
     });
 
     it('should return most recent task id', () => {
-      state.clickHistory = [
+      state.history = [
         { taskId: 'task1', timestamp: now - 10000 },
         { taskId: 'task2', timestamp: now - 5000 },
       ];
@@ -504,7 +504,7 @@ describe('TaskQueries', () => {
         { id: 'task1', name: 'Task 1' },
         { id: 'task2', name: 'Task 2' },
       ];
-      state.clickHistory = [
+      state.history = [
         { taskId: 'task1', timestamp: now - 20000 },
         { taskId: 'task2', timestamp: now - 10000 },
       ];

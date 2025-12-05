@@ -10,7 +10,7 @@ export interface ClickEvent {
 
 export interface StoredData {
   tasks: TaskData[]
-  clickHistory: ClickEvent[] // Chronological list of all task clicks
+  history: ClickEvent[] // Chronological list of all task clicks
   lastModified: number
 }
 

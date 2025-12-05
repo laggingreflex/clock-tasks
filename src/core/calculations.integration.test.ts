@@ -15,7 +15,7 @@ describe('Time Calculation Logic Bug Hunt', () => {
   beforeEach(() => {
     state = {
       tasks: [],
-      clickHistory: [],
+      history: [],
       lastModified: 0
     }
   })
@@ -67,7 +67,7 @@ describe('Time Calculation Logic Bug Hunt', () => {
 
       // Check state
       console.log('\n📊 Click History:')
-      state.clickHistory.forEach((click, i) => {
+      state.history.forEach((click, i) => {
         console.log(`  [${i}] Task ${click.taskId} clicked at ${click.timestamp}ms`)
       })
 
@@ -114,7 +114,7 @@ describe('Time Calculation Logic Bug Hunt', () => {
       state = TaskOperations.addAndStartTask('C', state, timeCtrl.getGenerator()) // C at 4000
 
       console.log('\n📋 Timeline (after creation):')
-      state.clickHistory.forEach((click, i) => {
+      state.history.forEach((click, i) => {
         console.log(`  [${i}] Task ${click.taskId} at ${click.timestamp}ms`)
       })
 
@@ -122,7 +122,7 @@ describe('Time Calculation Logic Bug Hunt', () => {
       state = TaskOperations.startTask('3000', state, timeCtrl.getGenerator()) // Click B again at 5000
 
       console.log('\n📋 Timeline (after clicking B again):')
-      state.clickHistory.forEach((click, i) => {
+      state.history.forEach((click, i) => {
         console.log(`  [${i}] Task ${click.taskId} at ${click.timestamp}ms`)
       })
 
@@ -163,7 +163,7 @@ describe('Time Calculation Logic Bug Hunt', () => {
           { id: '2000', name: 'B' },
           { id: '3000', name: 'C' }
         ],
-        clickHistory: [
+        history: [
           { taskId: '1000', timestamp: 1000 }, // A clicked at 1000
           { taskId: '2000', timestamp: 2000 }, // B clicked at 2000
           { taskId: '3000', timestamp: 3000 }, // C clicked at 3000
@@ -173,7 +173,7 @@ describe('Time Calculation Logic Bug Hunt', () => {
       }
 
       console.log('\n📋 Explicit Click History:')
-      state.clickHistory.forEach((click, i) => {
+      state.history.forEach((click, i) => {
         console.log(`  [${i}] Task ${click.taskId} at ${click.timestamp}ms`)
       })
 

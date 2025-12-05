@@ -6,12 +6,12 @@ import { calculateTaskStats, getCurrentRunningTaskId } from './taskCalculations'
  */
 export function taskDataToTask(
   taskData: TaskData,
-  clickHistory: ClickEvent[],
+  history: ClickEvent[],
   now: number
 ): Task {
-  const currentRunningTaskId = getCurrentRunningTaskId(clickHistory)
+  const currentRunningTaskId = getCurrentRunningTaskId(history)
   const isRunning = taskData.id === currentRunningTaskId
-  const stats = calculateTaskStats(taskData.id, clickHistory, now)
+  const stats = calculateTaskStats(taskData.id, history, now)
 
   return {
     id: taskData.id,
@@ -28,10 +28,10 @@ export function taskDataToTask(
  */
 export function convertTaskDataList(
   taskDataList: TaskData[],
-  clickHistory: ClickEvent[],
+  history: ClickEvent[],
   now: number
 ): Task[] {
-  return taskDataList.map(td => taskDataToTask(td, clickHistory, now))
+  return taskDataList.map(td => taskDataToTask(td, history, now))
 }
 
 /**

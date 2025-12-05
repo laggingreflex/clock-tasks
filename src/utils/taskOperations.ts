@@ -8,7 +8,7 @@ import { logger } from './logger'
 export function addTask(
   name: string,
   taskDataList: TaskData[],
-  clickHistory: ClickEvent[],
+  history: ClickEvent[],
   onTaskAdded: (id: string) => void,
   onSync: (data: StoredData) => Promise<void>
 ): void {
@@ -21,9 +21,9 @@ export function addTask(
       name: name.trim()
     }
     const newTasks = [...taskDataList, newTaskData]
-    const newClickHistory = [...clickHistory, { taskId: id, timestamp: now }]
+    const newhistory = [...history, { taskId: id, timestamp: now }]
 
-    syncData(newTasks, newClickHistory, onSync)
+    syncData(newTasks, newhistory, onSync)
     onTaskAdded(id)
   }
 }
@@ -34,15 +34,15 @@ export function addTask(
 export function startTask(
   id: string,
   taskDataList: TaskData[],
-  clickHistory: ClickEvent[],
+  history: ClickEvent[],
   onSync: (data: StoredData) => Promise<void>
 ): void {
   const now = Date.now()
   logger.log(`Starting task: ${id} at ${now}`)
-  logger.debug('Current clickHistory:', clickHistory)
-  const newClickHistory = [...clickHistory, { taskId: id, timestamp: now }]
-  logger.debug('New clickHistory:', newClickHistory)
-  syncData(taskDataList, newClickHistory, onSync)
+  logger.debug('Current history:', history)
+  const newhistory = [...history, { taskId: id, timestamp: now }]
+  logger.debug('New history:', newhistory)
+  syncData(taskDataList, newhistory, onSync)
 }
 
 /**
@@ -52,11 +52,11 @@ export function updateTaskName(
   id: string,
   name: string,
   taskDataList: TaskData[],
-  clickHistory: ClickEvent[],
+  history: ClickEvent[],
   onSync: (data: StoredData) => Promise<void>
 ): TaskData[] {
   const updated = taskDataList.map(td => (td.id === id ? { ...td, name } : td))
-  syncData(updated, clickHistory, onSync)
+  syncData(updated, history, onSync)
   return updated
 }
 
@@ -66,17 +66,17 @@ export function updateTaskName(
 export function deleteTask(
   id: string,
   taskDataList: TaskData[],
-  clickHistory: ClickEvent[],
+  history: ClickEvent[],
   onSync: (data: StoredData) => Promise<void>
 ): { tasks: TaskData[]; history: ClickEvent[] } {
   if (window.confirm('Delete this task?')) {
     const updated = taskDataList.filter(td => td.id !== id)
     // Also remove all click history for this task
-    const updatedHistory = clickHistory.filter(e => e.taskId !== id)
+    const updatedHistory = history.filter(e => e.taskId !== id)
     syncData(updated, updatedHistory, onSync)
     return { tasks: updated, history: updatedHistory }
   }
-  return { tasks: taskDataList, history: clickHistory }
+  return { tasks: taskDataList, history: history }
 }
 
 /**
@@ -84,14 +84,14 @@ export function deleteTask(
  */
 export function deleteAllTasks(
   taskDataList: TaskData[],
-  clickHistory: ClickEvent[],
+  history: ClickEvent[],
   onSync: (data: StoredData) => Promise<void>
 ): { tasks: TaskData[]; history: ClickEvent[] } {
   if (window.confirm('Delete all tasks?')) {
     syncData([], [], onSync)
     return { tasks: [], history: [] }
   }
-  return { tasks: taskDataList, history: clickHistory }
+  return { tasks: taskDataList, history: history }
 }
 
 /**
@@ -109,13 +109,13 @@ export function resetAllTasks(
  */
 function syncData(
   tasks: TaskData[],
-  clickHistory: ClickEvent[],
+  history: ClickEvent[],
   onSync: (data: StoredData) => Promise<void>
 ): void {
   const now = Date.now()
   const data: StoredData = {
     tasks,
-    clickHistory,
+    history,
     lastModified: now
   }
   saveToLocalStorage(data)

@@ -18,7 +18,7 @@ export const useTaskHandlers = (
     setState(newState)
     syncToGoogleDrive(driveFileId, {
       tasks: newState.tasks,
-      clickHistory: newState.clickHistory,
+      history: newState.history,
       lastModified: newState.lastModified
     }).catch(err => {
       log.error('updateAndSync failed:', err)

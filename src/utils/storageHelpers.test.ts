@@ -20,7 +20,7 @@ describe('storageHelpers', () => {
     it('should save and load empty data', () => {
       const data: StoredData = {
         tasks: [],
-        clickHistory: [],
+        history: [],
         lastModified: Date.now(),
       };
 
@@ -28,7 +28,7 @@ describe('storageHelpers', () => {
       const loaded = loadFromLocalStorage();
 
       expect(loaded.tasks).toEqual([]);
-      expect(loaded.clickHistory).toEqual([]);
+      expect(loaded.history).toEqual([]);
     });
 
     it('should save and load tasks', () => {
@@ -38,7 +38,7 @@ describe('storageHelpers', () => {
       ];
       const data: StoredData = {
         tasks,
-        clickHistory: [],
+        history: [],
         lastModified: Date.now(),
       };
 
@@ -49,20 +49,20 @@ describe('storageHelpers', () => {
     });
 
     it('should save and load click history', () => {
-      const clickHistory: ClickEvent[] = [
+      const history: ClickEvent[] = [
         { taskId: '1', timestamp: 1000 },
         { taskId: '2', timestamp: 2000 },
       ];
       const data: StoredData = {
         tasks: [],
-        clickHistory,
+        history,
         lastModified: Date.now(),
       };
 
       saveToLocalStorage(data);
       const loaded = loadFromLocalStorage();
 
-      expect(loaded.clickHistory).toEqual(clickHistory);
+      expect(loaded.history).toEqual(history);
     });
 
     it('should save and load complete data structure', () => {
@@ -71,7 +71,7 @@ describe('storageHelpers', () => {
           { id: '1', name: 'Task 1' },
           { id: '2', name: 'Task 2' },
         ],
-        clickHistory: [
+        history: [
           { taskId: '1', timestamp: 1000 },
           { taskId: '2', timestamp: 2000 },
         ],
@@ -83,7 +83,7 @@ describe('storageHelpers', () => {
 
       expect(loaded).toEqual({
         tasks: data.tasks,
-        clickHistory: data.clickHistory,
+        history: data.history,
       });
     });
   });
@@ -94,7 +94,7 @@ describe('storageHelpers', () => {
 
       expect(result).toEqual({
         tasks: [],
-        clickHistory: [],
+        history: [],
       });
     });
 
@@ -105,28 +105,28 @@ describe('storageHelpers', () => {
 
       expect(result).toEqual({
         tasks: [],
-        clickHistory: [],
+        history: [],
       });
     });
 
     it('should handle missing tasks property', () => {
-      const data = { clickHistory: [{ taskId: '1', timestamp: 1000 }] };
+      const data = { history: [{ taskId: '1', timestamp: 1000 }] };
       localStorage.setItem('clockTasks', JSON.stringify(data));
 
       const result = loadFromLocalStorage();
 
       expect(result.tasks).toEqual([]);
-      expect(result.clickHistory).toEqual(data.clickHistory);
+      expect(result.history).toEqual(data.history);
     });
 
-    it('should handle missing clickHistory property', () => {
+    it('should handle missing history property', () => {
       const data = { tasks: [{ id: '1', name: 'Task' }] };
       localStorage.setItem('clockTasks', JSON.stringify(data));
 
       const result = loadFromLocalStorage();
 
       expect(result.tasks).toEqual(data.tasks);
-      expect(result.clickHistory).toEqual([]);
+      expect(result.history).toEqual([]);
     });
   });
 
@@ -134,7 +134,7 @@ describe('storageHelpers', () => {
     it('should clear all stored data', () => {
       const data: StoredData = {
         tasks: [{ id: '1', name: 'Task' }],
-        clickHistory: [{ taskId: '1', timestamp: 1000 }],
+        history: [{ taskId: '1', timestamp: 1000 }],
         lastModified: Date.now(),
       };
 
@@ -148,7 +148,7 @@ describe('storageHelpers', () => {
     it('should result in empty state after clearing', () => {
       const data: StoredData = {
         tasks: [{ id: '1', name: 'Task' }],
-        clickHistory: [{ taskId: '1', timestamp: 1000 }],
+        history: [{ taskId: '1', timestamp: 1000 }],
         lastModified: Date.now(),
       };
 
@@ -158,7 +158,7 @@ describe('storageHelpers', () => {
       const loaded = loadFromLocalStorage();
       expect(loaded).toEqual({
         tasks: [],
-        clickHistory: [],
+        history: [],
       });
     });
   });

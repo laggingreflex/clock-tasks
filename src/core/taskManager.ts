@@ -11,7 +11,7 @@ const log = createLogger('TaskManager')
 
 export interface TaskManagerState {
   tasks: TaskData[]
-  clickHistory: ClickEvent[]
+  history: ClickEvent[]
   lastModified: number
 }
 
@@ -76,12 +76,12 @@ export const TaskOperations = {
     }
 
     log.log(`✚ Add & start task: "${name}" (id: ${id}) at ${timestamp}ms`)
-    log.debug('addAndStartTask - current running:', getRunningTaskId(currentState.clickHistory))
+    log.debug('addAndStartTask - current running:', getRunningTaskId(currentState.history))
 
     return {
       ...currentState,
       tasks: [...currentState.tasks, newTaskData],
-      clickHistory: [...currentState.clickHistory, { taskId: id, timestamp }],
+      history: [...currentState.history, { taskId: id, timestamp }],
       lastModified: timestamp
     }
   },
@@ -96,7 +96,7 @@ export const TaskOperations = {
   ): TaskManagerState {
     const timestamp = getTimestamp()
     const taskName = currentState.tasks.find(t => t.id === id)?.name || 'unknown'
-    const wasPreviouslyRunning = getRunningTaskId(currentState.clickHistory)
+    const wasPreviouslyRunning = getRunningTaskId(currentState.history)
 
     log.log(`▶ Start task: "${taskName}" (id: ${id}) at ${timestamp}ms`)
     if (wasPreviouslyRunning !== id) {
@@ -106,7 +106,7 @@ export const TaskOperations = {
 
     return {
       ...currentState,
-      clickHistory: [...currentState.clickHistory, { taskId: id, timestamp }],
+      history: [...currentState.history, { taskId: id, timestamp }],
       lastModified: timestamp
     }
   },
@@ -139,14 +139,14 @@ export const TaskOperations = {
     getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
     const taskName = currentState.tasks.find(t => t.id === id)?.name || 'unknown'
-    const clicksRemoved = currentState.clickHistory.filter(e => e.taskId === id).length
+    const clicksRemoved = currentState.history.filter(e => e.taskId === id).length
 
     log.log(`🗑 Delete task: "${taskName}" (id: ${id}) - removed ${clicksRemoved} click events`)
 
     return {
       ...currentState,
       tasks: currentState.tasks.filter(td => td.id !== id),
-      clickHistory: currentState.clickHistory.filter(e => e.taskId !== id),
+      history: currentState.history.filter(e => e.taskId !== id),
       lastModified: getTimestamp()
     }
   },
@@ -161,7 +161,7 @@ export const TaskOperations = {
     log.log(`🗑 Delete all tasks - clearing entire state`)
     return {
       tasks: [],
-      clickHistory: [],
+      history: [],
       lastModified: getTimestamp()
     }
   },
@@ -174,12 +174,12 @@ export const TaskOperations = {
     getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
     const tasksCount = currentState.tasks.length
-    const clicksCount = currentState.clickHistory.length
+    const clicksCount = currentState.history.length
     log.log(`⟲ Reset all timers - clearing ${clicksCount} click events for ${tasksCount} tasks`)
 
     return {
       ...currentState,
-      clickHistory: [],
+      history: [],
       lastModified: getTimestamp()
     }
   },
@@ -191,18 +191,18 @@ export const TaskOperations = {
     currentState: TaskManagerState,
     getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
-    if (currentState.clickHistory.length === 0) {
+    if (currentState.history.length === 0) {
       log.debug('pauseCurrentTask: no clicks to remove')
       return currentState
     }
 
-    const lastClick = currentState.clickHistory[currentState.clickHistory.length - 1]
+    const lastClick = currentState.history[currentState.history.length - 1]
     const taskName = currentState.tasks.find(t => t.id === lastClick.taskId)?.name || 'unknown'
     log.log(`⏸ Pause task: "${taskName}" (id: ${lastClick.taskId})`)
 
     return {
       ...currentState,
-      clickHistory: currentState.clickHistory.slice(0, -1),
+      history: currentState.history.slice(0, -1),
       lastModified: getTimestamp()
     }
   }
@@ -219,7 +219,7 @@ export const TaskQueries = {
     state: TaskManagerState,
     now: number
   ): Task[] {
-    const tasks = convertTaskDataList(state.tasks, state.clickHistory, now)
+    const tasks = convertTaskDataList(state.tasks, state.history, now)
     log.debug(`getAllTasks: ${tasks.length} tasks, running: ${tasks.filter(t => t.isRunning).map(t => t.name).join(', ') || 'none'}`)
     return tasks
   },
@@ -238,8 +238,8 @@ export const TaskQueries = {
       return undefined
     }
 
-    const isRunning = id === getRunningTaskId(state.clickHistory)
-    const stats = calculateTaskStats(id, state.clickHistory, now)
+    const isRunning = id === getRunningTaskId(state.history)
+    const stats = calculateTaskStats(id, state.history, now)
 
     const task = {
       id: taskData.id,
@@ -258,7 +258,7 @@ export const TaskQueries = {
    * Get currently running task ID
    */
   getCurrentRunningTaskId(state: TaskManagerState): string | undefined {
-    const id = getRunningTaskId(state.clickHistory)
+    const id = getRunningTaskId(state.history)
     const taskName = id ? state.tasks.find(t => t.id === id)?.name : 'none'
     log.debug(`getCurrentRunningTaskId: "${taskName}" (id: ${id})`)
     return id

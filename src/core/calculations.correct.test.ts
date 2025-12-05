@@ -13,7 +13,7 @@ describe('Time Calculation - Corrected Tests (Units in Seconds)', () => {
   beforeEach(() => {
     state = {
       tasks: [],
-      clickHistory: [],
+      history: [],
       lastModified: 0
     }
   })
@@ -27,7 +27,7 @@ describe('Time Calculation - Corrected Tests (Units in Seconds)', () => {
           { id: '2000', name: 'B' },
           { id: '3000', name: 'C' }
         ],
-        clickHistory: [
+        history: [
           { taskId: '1000', timestamp: 1000 },
           { taskId: '2000', timestamp: 2000 },
           { taskId: '3000', timestamp: 3000 }
@@ -61,7 +61,7 @@ describe('Time Calculation - Corrected Tests (Units in Seconds)', () => {
           { id: '2000', name: 'B' },
           { id: '3000', name: 'C' }
         ],
-        clickHistory: [
+        history: [
           { taskId: '1000', timestamp: 1000 },
           { taskId: '2000', timestamp: 2000 },
           { taskId: '3000', timestamp: 3000 },
@@ -99,7 +99,7 @@ describe('Time Calculation - Corrected Tests (Units in Seconds)', () => {
       // Timeline: A(0) -> A(1000) -> A(2000), query at 3000
       state = {
         tasks: [{ id: '0', name: 'A' }],
-        clickHistory: [
+        history: [
           { taskId: '0', timestamp: 0 },
           { taskId: '0', timestamp: 1000 },
           { taskId: '0', timestamp: 2000 }
@@ -128,7 +128,7 @@ describe('Time Calculation - Corrected Tests (Units in Seconds)', () => {
       // Create A at t=1000
       state = {
         tasks: [{ id: '1000', name: 'A' }],
-        clickHistory: [{ taskId: '1000', timestamp: 1000 }],
+        history: [{ taskId: '1000', timestamp: 1000 }],
         lastModified: 1000
       }
 
@@ -141,7 +141,7 @@ describe('Time Calculation - Corrected Tests (Units in Seconds)', () => {
           { id: '1000', name: 'A' },
           { id: '2000', name: 'B' }
         ],
-        clickHistory: [
+        history: [
           { taskId: '1000', timestamp: 1000 },
           { taskId: '2000', timestamp: 2000 }
         ],
@@ -159,7 +159,7 @@ describe('Time Calculation - Corrected Tests (Units in Seconds)', () => {
           { id: '2000', name: 'B' },
           { id: '3000', name: 'C' }
         ],
-        clickHistory: [
+        history: [
           { taskId: '1000', timestamp: 1000 },
           { taskId: '2000', timestamp: 2000 },
           { taskId: '3000', timestamp: 3000 }
@@ -182,7 +182,7 @@ describe('Time Calculation - Corrected Tests (Units in Seconds)', () => {
           { id: '0', name: 'A' },
           { id: '1000', name: 'B' }
         ],
-        clickHistory: [
+        history: [
           { taskId: '0', timestamp: 0 },
           { taskId: '1000', timestamp: 1000 },
           { taskId: '0', timestamp: 2000 }
@@ -213,7 +213,7 @@ describe('Time Calculation - Corrected Tests (Units in Seconds)', () => {
     it('should handle when task is clicked right at the query moment', () => {
       state = {
         tasks: [{ id: '1000', name: 'A' }],
-        clickHistory: [{ taskId: '1000', timestamp: 1000 }],
+        history: [{ taskId: '1000', timestamp: 1000 }],
         lastModified: 1000
       }
 

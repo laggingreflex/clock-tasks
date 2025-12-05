@@ -19,14 +19,14 @@ describe('LocalStorageBackend', () => {
       const result = await backend.load();
 
       expect(result.tasks).toEqual([]);
-      expect(result.clickHistory).toEqual([]);
+      expect(result.history).toEqual([]);
       expect(result.lastModified).toBeGreaterThan(0);
     });
 
     it('should load saved data', async () => {
       const data: StoredData = {
         tasks: [{ id: '1', name: 'Task 1' }],
-        clickHistory: [{ taskId: '1', timestamp: 1000 }],
+        history: [{ taskId: '1', timestamp: 1000 }],
         lastModified: 2000,
       };
 
@@ -35,7 +35,7 @@ describe('LocalStorageBackend', () => {
       const result = await backend.load();
 
       expect(result.tasks).toEqual(data.tasks);
-      expect(result.clickHistory).toEqual(data.clickHistory);
+      expect(result.history).toEqual(data.history);
       expect(result.lastModified).toBe(2000);
     });
 
@@ -45,27 +45,27 @@ describe('LocalStorageBackend', () => {
       const result = await backend.load();
 
       expect(result.tasks).toEqual([]);
-      expect(result.clickHistory).toEqual([]);
+      expect(result.history).toEqual([]);
     });
 
     it('should handle missing tasks property', async () => {
-      const data = { clickHistory: [{ taskId: '1', timestamp: 1000 }] };
+      const data = { history: [{ taskId: '1', timestamp: 1000 }] };
       localStorage.setItem('clockTasks', JSON.stringify(data));
 
       const result = await backend.load();
 
       expect(result.tasks).toEqual([]);
-      expect(result.clickHistory).toEqual(data.clickHistory);
+      expect(result.history).toEqual(data.history);
     });
 
-    it('should handle missing clickHistory property', async () => {
+    it('should handle missing history property', async () => {
       const data = { tasks: [{ id: '1', name: 'Task' }] };
       localStorage.setItem('clockTasks', JSON.stringify(data));
 
       const result = await backend.load();
 
       expect(result.tasks).toEqual(data.tasks);
-      expect(result.clickHistory).toEqual([]);
+      expect(result.history).toEqual([]);
     });
   });
 
@@ -73,7 +73,7 @@ describe('LocalStorageBackend', () => {
     it('should save data to localStorage', async () => {
       const data: StoredData = {
         tasks: [{ id: '1', name: 'Task 1' }],
-        clickHistory: [{ taskId: '1', timestamp: 1000 }],
+        history: [{ taskId: '1', timestamp: 1000 }],
         lastModified: 2000,
       };
 
@@ -88,13 +88,13 @@ describe('LocalStorageBackend', () => {
     it('should overwrite previous data', async () => {
       const data1: StoredData = {
         tasks: [{ id: '1', name: 'Task 1' }],
-        clickHistory: [],
+        history: [],
         lastModified: 1000,
       };
 
       const data2: StoredData = {
         tasks: [{ id: '2', name: 'Task 2' }],
-        clickHistory: [],
+        history: [],
         lastModified: 2000,
       };
 
@@ -108,7 +108,7 @@ describe('LocalStorageBackend', () => {
     it('should handle multiple saves', async () => {
       const data: StoredData = {
         tasks: [{ id: '1', name: 'Task' }],
-        clickHistory: [],
+        history: [],
         lastModified: Date.now(),
       };
 
@@ -125,7 +125,7 @@ describe('LocalStorageBackend', () => {
     it('should clear all saved data', async () => {
       const data: StoredData = {
         tasks: [{ id: '1', name: 'Task' }],
-        clickHistory: [],
+        history: [],
         lastModified: Date.now(),
       };
 
@@ -138,7 +138,7 @@ describe('LocalStorageBackend', () => {
     it('should result in default state after clear', async () => {
       const data: StoredData = {
         tasks: [{ id: '1', name: 'Task' }],
-        clickHistory: [],
+        history: [],
         lastModified: Date.now(),
       };
 
@@ -147,7 +147,7 @@ describe('LocalStorageBackend', () => {
 
       const result = await backend.load();
       expect(result.tasks).toEqual([]);
-      expect(result.clickHistory).toEqual([]);
+      expect(result.history).toEqual([]);
     });
   });
 });
@@ -164,13 +164,13 @@ describe('InMemoryBackend', () => {
       const result = await backend.load();
 
       expect(result.tasks).toEqual([]);
-      expect(result.clickHistory).toEqual([]);
+      expect(result.history).toEqual([]);
     });
 
     it('should return deep copy of data', async () => {
       const data: StoredData = {
         tasks: [{ id: '1', name: 'Task' }],
-        clickHistory: [{ taskId: '1', timestamp: 1000 }],
+        history: [{ taskId: '1', timestamp: 1000 }],
         lastModified: 2000,
       };
 
@@ -188,7 +188,7 @@ describe('InMemoryBackend', () => {
     it('should save data', async () => {
       const data: StoredData = {
         tasks: [{ id: '1', name: 'Task' }],
-        clickHistory: [],
+        history: [],
         lastModified: 1000,
       };
 
@@ -201,13 +201,13 @@ describe('InMemoryBackend', () => {
     it('should handle multiple saves', async () => {
       const data1: StoredData = {
         tasks: [{ id: '1', name: 'Task 1' }],
-        clickHistory: [],
+        history: [],
         lastModified: 1000,
       };
 
       const data2: StoredData = {
         tasks: [{ id: '2', name: 'Task 2' }],
-        clickHistory: [],
+        history: [],
         lastModified: 2000,
       };
 
@@ -225,7 +225,7 @@ describe('InMemoryBackend', () => {
     it('should clear saved data', async () => {
       const data: StoredData = {
         tasks: [{ id: '1', name: 'Task' }],
-        clickHistory: [],
+        history: [],
         lastModified: 1000,
       };
 
@@ -234,13 +234,13 @@ describe('InMemoryBackend', () => {
 
       const result = await backend.load();
       expect(result.tasks).toEqual([]);
-      expect(result.clickHistory).toEqual([]);
+      expect(result.history).toEqual([]);
     });
 
     it('should reset to default state after clear', async () => {
       const data: StoredData = {
         tasks: [{ id: '1', name: 'Task' }],
-        clickHistory: [{ taskId: '1', timestamp: 500 }],
+        history: [{ taskId: '1', timestamp: 500 }],
         lastModified: 1000,
       };
 
@@ -250,7 +250,7 @@ describe('InMemoryBackend', () => {
       const result = await backend.load();
       expect(result).toEqual({
         tasks: [],
-        clickHistory: [],
+        history: [],
         lastModified: result.lastModified, // Will be a new timestamp
       });
     });
@@ -271,14 +271,14 @@ describe('loadFromLocalStorage', () => {
 
     expect(result).toEqual({
       tasks: [],
-      clickHistory: [],
+      history: [],
     });
   });
 
   it('should load saved data', () => {
     const data: StoredData = {
       tasks: [{ id: '1', name: 'Task 1' }],
-      clickHistory: [{ taskId: '1', timestamp: 1000 }],
+      history: [{ taskId: '1', timestamp: 1000 }],
       lastModified: 2000,
     };
 
@@ -287,7 +287,7 @@ describe('loadFromLocalStorage', () => {
     const result = loadFromLocalStorage();
 
     expect(result.tasks).toEqual(data.tasks);
-    expect(result.clickHistory).toEqual(data.clickHistory);
+    expect(result.history).toEqual(data.history);
   });
 
   it('should handle corrupted JSON gracefully', () => {
@@ -297,7 +297,7 @@ describe('loadFromLocalStorage', () => {
 
     expect(result).toEqual({
       tasks: [],
-      clickHistory: [],
+      history: [],
     });
   });
 
@@ -308,7 +308,7 @@ describe('loadFromLocalStorage', () => {
     const result = loadFromLocalStorage();
 
     expect(result.tasks).toEqual(data.tasks);
-    expect(result.clickHistory).toEqual([]);
+    expect(result.history).toEqual([]);
   });
 });
 
@@ -324,7 +324,7 @@ describe('saveToLocalStorage', () => {
   it('should save data to localStorage', () => {
     const data: StoredData = {
       tasks: [{ id: '1', name: 'Task 1' }],
-      clickHistory: [{ taskId: '1', timestamp: 1000 }],
+      history: [{ taskId: '1', timestamp: 1000 }],
       lastModified: 2000,
     };
 
@@ -334,13 +334,13 @@ describe('saveToLocalStorage', () => {
     expect(saved).not.toBeNull();
     const parsed = JSON.parse(saved!);
     expect(parsed.tasks).toEqual(data.tasks);
-    expect(parsed.clickHistory).toEqual(data.clickHistory);
+    expect(parsed.history).toEqual(data.history);
   });
 
   it('should save empty data structure', () => {
     const data: StoredData = {
       tasks: [],
-      clickHistory: [],
+      history: [],
       lastModified: Date.now(),
     };
 
@@ -348,19 +348,19 @@ describe('saveToLocalStorage', () => {
 
     const result = loadFromLocalStorage();
     expect(result.tasks).toEqual([]);
-    expect(result.clickHistory).toEqual([]);
+    expect(result.history).toEqual([]);
   });
 
   it('should overwrite previous data', () => {
     const data1: StoredData = {
       tasks: [{ id: '1', name: 'Task 1' }],
-      clickHistory: [],
+      history: [],
       lastModified: 1000,
     };
 
     const data2: StoredData = {
       tasks: [{ id: '2', name: 'Task 2' }],
-      clickHistory: [],
+      history: [],
       lastModified: 2000,
     };
 
@@ -384,7 +384,7 @@ describe('clearLocalStorage', () => {
   it('should clear all saved data', () => {
     const data: StoredData = {
       tasks: [{ id: '1', name: 'Task' }],
-      clickHistory: [],
+      history: [],
       lastModified: Date.now(),
     };
 
@@ -397,7 +397,7 @@ describe('clearLocalStorage', () => {
   it('should result in empty state after clear', () => {
     const data: StoredData = {
       tasks: [{ id: '1', name: 'Task' }],
-      clickHistory: [{ taskId: '1', timestamp: 1000 }],
+      history: [{ taskId: '1', timestamp: 1000 }],
       lastModified: Date.now(),
     };
 
@@ -407,14 +407,14 @@ describe('clearLocalStorage', () => {
     const result = loadFromLocalStorage();
     expect(result).toEqual({
       tasks: [],
-      clickHistory: [],
+      history: [],
     });
   });
 
   it('should be safe to call multiple times', () => {
     const data: StoredData = {
       tasks: [{ id: '1', name: 'Task' }],
-      clickHistory: [],
+      history: [],
       lastModified: Date.now(),
     };
 

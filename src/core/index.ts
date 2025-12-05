@@ -41,7 +41,7 @@ export { formatTime } from './timeFormatter'
  * // Initialize state
  * const state = {
  *   tasks: [],
- *   clickHistory: [],
+ *   history: [],
  *   lastModified: Date.now()
  * }
  *
@@ -55,7 +55,7 @@ export { formatTime } from './timeFormatter'
  * const storage = new LocalStorageBackend()
  * await storage.save({
  *   tasks: newState.tasks,
- *   clickHistory: newState.clickHistory,
+ *   history: newState.history,
  *   lastModified: newState.lastModified
  * })
  *

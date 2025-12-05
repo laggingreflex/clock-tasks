@@ -10,10 +10,10 @@ describe('taskHelpers', () => {
   describe('taskDataToTask', () => {
     it('should convert task data to task with no running status', () => {
       const taskData: TaskData = { id: 'task1', name: 'Test Task' };
-      const clickHistory: ClickEvent[] = [];
+      const history: ClickEvent[] = [];
       const now = Date.now();
 
-      const result = taskDataToTask(taskData, clickHistory, now);
+      const result = taskDataToTask(taskData, history, now);
 
       expect(result.id).toBe('task1');
       expect(result.name).toBe('Test Task');
@@ -26,11 +26,11 @@ describe('taskHelpers', () => {
     it('should mark task as running if it is the most recent click', () => {
       const taskData: TaskData = { id: 'task1', name: 'Test Task' };
       const now = Date.now();
-      const clickHistory: ClickEvent[] = [
+      const history: ClickEvent[] = [
         { taskId: 'task1', timestamp: now - 5000 },
       ];
 
-      const result = taskDataToTask(taskData, clickHistory, now);
+      const result = taskDataToTask(taskData, history, now);
 
       expect(result.isRunning).toBe(true);
       expect(result.currentSessionTime).toBe(5);
@@ -39,14 +39,14 @@ describe('taskHelpers', () => {
     it('should set last session time when task is not running', () => {
       const taskData: TaskData = { id: 'task1', name: 'Test Task' };
       const now = Date.now();
-      const clickHistory: ClickEvent[] = [
+      const history: ClickEvent[] = [
         { taskId: 'task1', timestamp: now - 15000 },
         { taskId: 'task2', timestamp: now - 10000 },
         { taskId: 'task1', timestamp: now - 5000 },
         { taskId: 'task2', timestamp: now - 1000 },
       ];
 
-      const result = taskDataToTask(taskData, clickHistory, now);
+      const result = taskDataToTask(taskData, history, now);
 
       expect(result.isRunning).toBe(false);
       // task1's second session was 5 seconds (from now-5000 to now-1000 when task2 was clicked)
@@ -58,13 +58,13 @@ describe('taskHelpers', () => {
     it('should calculate total time correctly', () => {
       const taskData: TaskData = { id: 'task1', name: 'Test Task' };
       const now = Date.now();
-      const clickHistory: ClickEvent[] = [
+      const history: ClickEvent[] = [
         { taskId: 'task1', timestamp: now - 15000 },
         { taskId: 'task2', timestamp: now - 10000 },
         { taskId: 'task1', timestamp: now - 5000 },
       ];
 
-      const result = taskDataToTask(taskData, clickHistory, now);
+      const result = taskDataToTask(taskData, history, now);
 
       expect(result.totalTime).toBe(10); // 5 + 5
     });
@@ -82,12 +82,12 @@ describe('taskHelpers', () => {
         { id: 'task2', name: 'Task 2' },
       ];
       const now = Date.now();
-      const clickHistory: ClickEvent[] = [
+      const history: ClickEvent[] = [
         { taskId: 'task1', timestamp: now - 10000 },
         { taskId: 'task2', timestamp: now - 5000 },
       ];
 
-      const result = convertTaskDataList(taskDataList, clickHistory, now);
+      const result = convertTaskDataList(taskDataList, history, now);
 
       expect(result).toHaveLength(2);
       expect(result[0].id).toBe('task1');

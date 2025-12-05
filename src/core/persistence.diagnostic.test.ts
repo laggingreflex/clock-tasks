@@ -23,7 +23,7 @@ describe('Persistence Bug Hunt - Task Zeroing Issue', () => {
     backend = new InMemoryBackend()
     state = {
       tasks: [],
-      clickHistory: [],
+      history: [],
       lastModified: 0
     }
   })
@@ -40,13 +40,13 @@ describe('Persistence Bug Hunt - Task Zeroing Issue', () => {
       const createC = () => 3000
 
       state = TaskOperations.addAndStartTask('A', state, createA)
-      console.log(`✓ Created A at 1000ms, clickHistory length: ${state.clickHistory.length}`)
+      console.log(`✓ Created A at 1000ms, history length: ${state.history.length}`)
 
       state = TaskOperations.addAndStartTask('B', state, createB)
-      console.log(`✓ Created B at 2000ms, clickHistory length: ${state.clickHistory.length}`)
+      console.log(`✓ Created B at 2000ms, history length: ${state.history.length}`)
 
       state = TaskOperations.addAndStartTask('C', state, createC)
-      console.log(`✓ Created C at 3000ms, clickHistory length: ${state.clickHistory.length}`)
+      console.log(`✓ Created C at 3000ms, history length: ${state.history.length}`)
 
       // === PHASE 2: Query before persistence ===
       console.log('\nPHASE 2: Query before persistence (at t=3500)...')
@@ -60,22 +60,22 @@ describe('Persistence Bug Hunt - Task Zeroing Issue', () => {
       console.log('\nPHASE 3: Saving to storage...')
       const storedData: StoredData = {
         tasks: state.tasks,
-        clickHistory: state.clickHistory,
+        history: state.history,
         lastModified: state.lastModified
       }
-      console.log(`  Storing ${storedData.tasks.length} tasks and ${storedData.clickHistory.length} click events`)
+      console.log(`  Storing ${storedData.tasks.length} tasks and ${storedData.history.length} click events`)
       await backend.save(storedData)
       console.log('✓ Saved successfully')
 
       // === PHASE 4: Simulate refresh - load from storage ===
       console.log('\nPHASE 4: Simulating refresh - loading from storage...')
       const loaded = await backend.load()
-      console.log(`  Loaded ${loaded.tasks.length} tasks and ${loaded.clickHistory.length} click events`)
+      console.log(`  Loaded ${loaded.tasks.length} tasks and ${loaded.history.length} click events`)
 
       // Rebuild state from loaded data
       const restoredState: TaskManagerState = {
         tasks: loaded.tasks,
-        clickHistory: loaded.clickHistory,
+        history: loaded.history,
         lastModified: loaded.lastModified
       }
 
@@ -102,7 +102,7 @@ describe('Persistence Bug Hunt - Task Zeroing Issue', () => {
 
       // === ASSERTIONS ===
       expect(loaded.tasks.length).toBe(3)
-      expect(loaded.clickHistory.length).toBe(3)
+      expect(loaded.history.length).toBe(3)
 
       // Times should be identical before and after
       expect(afterLoad[0].totalTime).toBe(beforeSave[0].totalTime)
@@ -128,21 +128,21 @@ describe('Persistence Bug Hunt - Task Zeroing Issue', () => {
 
       console.log('Created A, B, C in quick succession (100ms apart)')
       console.log(`Tasks: ${state.tasks.length}`)
-      console.log(`Clicks: ${state.clickHistory.length}`)
+      console.log(`Clicks: ${state.history.length}`)
 
       const before = TaskQueries.getAllTasks(state, timestamp + 100)
       console.log('Before persistence:', before.map(t => `${t.name}=${t.totalTime}s`).join(', '))
 
       await backend.save({
         tasks: state.tasks,
-        clickHistory: state.clickHistory,
+        history: state.history,
         lastModified: state.lastModified
       })
 
       const loaded = await backend.load()
       const restoredState: TaskManagerState = {
         tasks: loaded.tasks,
-        clickHistory: loaded.clickHistory,
+        history: loaded.history,
         lastModified: loaded.lastModified
       }
 
@@ -157,37 +157,37 @@ describe('Persistence Bug Hunt - Task Zeroing Issue', () => {
   })
 
   describe('Scenario C: Identify if sync clears old tasks', () => {
-    it('should verify if sync operations preserve clickHistory', async () => {
+    it('should verify if sync operations preserve history', async () => {
       console.log('\n🔄 SYNC OPERATION TEST\n')
 
       // Create state with tasks
       state = TaskOperations.addAndStartTask('A', state, () => 1000)
       state = TaskOperations.addAndStartTask('B', state, () => 2000)
 
-      const clickHistoryBefore = state.clickHistory.length
-      console.log(`Before sync: ${state.clickHistory.length} clicks`)
+      const historyBefore = state.history.length
+      console.log(`Before sync: ${state.history.length} clicks`)
 
       // Simulate a sync operation that might clear data
       const syncedData: StoredData = {
         tasks: state.tasks,
-        clickHistory: state.clickHistory,  // Make sure this is included!
+        history: state.history,  // Make sure this is included!
         lastModified: state.lastModified
       }
 
-      // ⚠️ BUG CHECK: Is clickHistory being included in sync?
-      if (syncedData.clickHistory.length === 0) {
-        console.log('❌ BUG FOUND: clickHistory is empty in sync payload!')
+      // ⚠️ BUG CHECK: Is history being included in sync?
+      if (syncedData.history.length === 0) {
+        console.log('❌ BUG FOUND: history is empty in sync payload!')
       } else {
-        console.log(`✓ clickHistory included: ${syncedData.clickHistory.length} items`)
+        console.log(`✓ history included: ${syncedData.history.length} items`)
       }
 
       await backend.save(syncedData)
       const loaded = await backend.load()
 
-      console.log(`After sync: ${loaded.clickHistory.length} clicks`)
+      console.log(`After sync: ${loaded.history.length} clicks`)
 
-      expect(loaded.clickHistory.length).toBe(clickHistoryBefore)
-      expect(loaded.clickHistory.length).toBeGreaterThan(0)
+      expect(loaded.history.length).toBe(historyBefore)
+      expect(loaded.history.length).toBeGreaterThan(0)
     })
   })
 
@@ -211,7 +211,7 @@ describe('Persistence Bug Hunt - Task Zeroing Issue', () => {
       console.log('\nStep 4: Save')
       await backend.save({
         tasks: state.tasks,
-        clickHistory: state.clickHistory,
+        history: state.history,
         lastModified: state.lastModified
       })
       logState('Saved state', state)
@@ -220,7 +220,7 @@ describe('Persistence Bug Hunt - Task Zeroing Issue', () => {
       const loaded = await backend.load()
       logState('Loaded state', {
         tasks: loaded.tasks,
-        clickHistory: loaded.clickHistory,
+        history: loaded.history,
         lastModified: loaded.lastModified
       })
 
@@ -237,5 +237,5 @@ describe('Persistence Bug Hunt - Task Zeroing Issue', () => {
 function logState(label: string, state: TaskManagerState) {
   console.log(`\n  [${label}]`)
   console.log(`    Tasks: ${state.tasks.length}`, state.tasks.map(t => `(${t.id}:${t.name})`))
-  console.log(`    Clicks: ${state.clickHistory.length}`, state.clickHistory.map(c => `(${c.taskId}@${c.timestamp})`))
+  console.log(`    Clicks: ${state.history.length}`, state.history.map(c => `(${c.taskId}@${c.timestamp})`))
 }
