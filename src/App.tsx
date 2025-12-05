@@ -257,11 +257,9 @@ function App() {
                 type="text"
                 value={task.name}
                 onChange={(e) => updateTaskName(task.id, e.target.value)}
+                onFocus={() => !task.isRunning && startTask(task.id)}
                 placeholder="Task name"
               />
-              {!task.isRunning && (
-                <button title="Start task" onClick={() => startTask(task.id)}>▶</button>
-              )}
               {deletionMode && (
                 <button title="Delete task" className="delete-btn" onClick={() => deleteTask(task.id)}>🗑</button>
               )}
