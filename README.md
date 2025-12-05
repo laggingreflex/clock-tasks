@@ -82,7 +82,7 @@ All core business logic tests pass. The bug is in the integration layer (React h
 
 ## 🔴 Known Issue
 
-Tasks lose their time data when creating new tasks (task times get reset to 0). 
+Tasks lose their time data when creating new tasks (task times get reset to 0).
 
 **Status:** Investigation complete, bug is NOT in core logic (verified via comprehensive testing). Bug is likely in:
 1. Google Drive sync payload (`useSyncEffect.ts` or `googleDriveService.ts`)
@@ -143,7 +143,7 @@ Tasks lose their time data when creating new tasks (task times get reset to 0).
 
 ---
 
-**Last Updated:** 2025-12-05  
-**Documentation Status:** Complete and organized  
-**Core Logic Status:** ✅ Verified working  
+**Last Updated:** 2025-12-05
+**Documentation Status:** Complete and organized
+**Core Logic Status:** ✅ Verified working
 **Issue Status:** 🔴 Integration layer investigation ongoing

@@ -285,7 +285,8 @@ describe('taskDataToTask', () => {
     const result = taskDataToTask(taskData, clickHistory, now);
 
     expect(result.isRunning).toBe(false);
-    expect(result.lastSessionTime).toBe(5);
+    // task1's most recent session: from now-5000 to now-1000 = 4 seconds
+    expect(result.lastSessionTime).toBe(4);
     expect(result.currentSessionTime).toBe(0);
   });
 

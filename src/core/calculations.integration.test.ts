@@ -92,14 +92,14 @@ describe('Time Calculation Logic Bug Hunt', () => {
       console.log(`  Actual:   currentSessionTime=${tasks[2].currentSessionTime}, lastSessionTime=${tasks[2].lastSessionTime}, totalTime=${tasks[2].totalTime}`)
       console.log(`  isRunning: ${tasks[2].isRunning}`)
 
-      // ASSERTIONS - These should pass IF logic is correct
+      // ASSERTIONS - These should pass IF logic is correct (times in SECONDS)
       expect(tasks[0].isRunning).toBe(false) // A is not running (C is running)
       expect(tasks[0].currentSessionTime).toBe(0) // Not running, so no current session
-      expect(tasks[0].totalTime).toBe(1000) // Should have accumulated 1000ms from its click to next click
+      expect(tasks[0].totalTime).toBe(1) // Should have accumulated 1s from its click to next click
 
       expect(tasks[1].isRunning).toBe(false) // B is not running
       expect(tasks[1].currentSessionTime).toBe(0)
-      expect(tasks[1].totalTime).toBe(1000) // Should have 1000ms from its click to C's click
+      expect(tasks[1].totalTime).toBe(1) // Should have 1s from its click to C's click
 
       expect(tasks[2].isRunning).toBe(true) // C IS currently running
       expect(tasks[2].lastSessionTime).toBe(0) // C just started, no "last" session
@@ -146,12 +146,12 @@ describe('Time Calculation Logic Bug Hunt', () => {
       console.log(`  Actual:   currentSessionTime=${tasks[2].currentSessionTime}, lastSessionTime=${tasks[2].lastSessionTime}, totalTime=${tasks[2].totalTime}, isRunning=${tasks[2].isRunning}`)
       console.log(`  Explanation: C had session [4000-5000]=1000ms, ended when B was clicked again`)
 
-      // CRITICAL ASSERTIONS
-      expect(tasks[0].totalTime).toBe(1000) // A: 2000->3000 = 1s
-      expect(tasks[1].totalTime).toBe(1000) // B: 3000->4000 = 1s (NOT counting the 5000 click yet)
+      // CRITICAL ASSERTIONS (note: times are in SECONDS, not milliseconds)
+      expect(tasks[0].totalTime).toBe(1) // A: 2000->3000 = 1s
+      expect(tasks[1].totalTime).toBe(1) // B: 3000->4000 = 1s (NOT counting the 5000 click yet)
       expect(tasks[1].isRunning).toBe(true) // B just got clicked, so it's running
-      expect(tasks[2].totalTime).toBe(1000) // C: 4000->5000 = 1s
-      expect(tasks[2].lastSessionTime).toBe(1000) // C's last (only) session was 1s
+      expect(tasks[2].totalTime).toBe(1) // C: 4000->5000 = 1s
+      expect(tasks[2].lastSessionTime).toBe(1) // C's last (only) session was 1s
     })
   })
 
@@ -234,13 +234,17 @@ describe('Time Calculation Logic Bug Hunt', () => {
       console.log(`  C: totalTime=${snapshot3[2].totalTime}, currentSessionTime=${snapshot3[2].currentSessionTime}`)
 
       // ASSERTIONS
-      // A should stay at 1000ms when we added B
-      expect(snapshot2[0].totalTime).toBe(snapshot1[0].totalTime)
-      // A should stay at 1000ms when we added C
-      expect(snapshot3[0].totalTime).toBe(snapshot1[0].totalTime)
+      // When queried while A is running (at 1500), it has 0 completed sessions
+      expect(snapshot1[0].totalTime).toBe(0)
+      expect(snapshot1[0].currentSessionTime).toBe(0) // A just started, displaying 0
 
-      // B should stay at 1000ms when we added C
-      expect(snapshot3[1].totalTime).toBe(snapshot2[1].totalTime)
+      // When queried after B was created (at 2500), A has completed 1 session
+      expect(snapshot2[0].totalTime).toBe(1) // A ran from 1000->2000 = 1s
+      expect(snapshot2[0].currentSessionTime).toBe(0) // A is not running anymore
+
+      // When queried after C was created (at 3500), totals should remain the same
+      expect(snapshot3[0].totalTime).toBe(1) // A's total should not change
+      expect(snapshot3[1].totalTime).toBe(1) // B ran from 2000->3000 = 1s
     })
   })
 })

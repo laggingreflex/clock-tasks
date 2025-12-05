@@ -78,7 +78,7 @@ export function taskDataToTask(
     name: taskData.name,
     isRunning,
     currentSessionTime: isRunning ? stats.currentSessionTime : 0,
-    lastSessionTime: !isRunning && stats.lastSessionTime > 0 ? stats.lastSessionTime : 0,
+    lastSessionTime: !isRunning ? stats.currentSessionTime : 0,
     totalTime: stats.totalTime
   }
 }
