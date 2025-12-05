@@ -29,4 +29,5 @@ export interface User {
   name: string
   picture: string
   accessToken: string
+  isGuest?: boolean
 }

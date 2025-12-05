@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import './App.css'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { formatTime, TaskQueries } from './core'
-import { loadUserFromLocalStorage } from './utils/authHelpers'
+import { loadUserFromLocalStorage, createGuestUser } from './utils/authHelpers'
 import { useClickOutside, useDocumentTitle, useScrollToNewTask, useCurrentTime, useTaskState, useUIState, useSyncEffect, useTaskHandlers, useSortedTasks } from './hooks'
 import { LoginComponent } from './components/LoginComponent'
 import { AddTaskForm } from './components/AddTaskForm'
@@ -14,6 +14,7 @@ import type { User } from './types'
 function App() {
   const [user, setUser] = useState<User | null>(loadUserFromLocalStorage)
   const [driveFileId, setDriveFileId] = useState<string | null>(null)
+  const loginButtonRef = useRef<HTMLButtonElement>(null)
 
   const { state, setState } = useTaskState()
   const ui = useUIState()
@@ -28,51 +29,62 @@ function App() {
   useClickOutside(ui.showUserMenu, () => ui.setShowUserMenu(false), '.user-avatar-container')
 
   const handleLogout = () => {
-    setUser(null)
     localStorage.removeItem('googleUser')
+    // Reset to guest user
+    setUser(createGuestUser())
+  }
+
+  const handleLoginSuccess = (newUser: User) => {
+    setUser(newUser)
+    localStorage.setItem('googleUser', JSON.stringify(newUser))
+  }
+
+  const handleProfileClick = () => {
+    if (user?.isGuest && loginButtonRef.current) {
+      loginButtonRef.current.click()
+    }
   }
 
   return (
-    <div>
-      {!user ? (
-        <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-          <LoginComponent
-            onLoginSuccess={(newUser) => {
-              setUser(newUser)
-              localStorage.setItem('googleUser', JSON.stringify(newUser))
-            }}
-          />
-        </GoogleOAuthProvider>
-      ) : (
-        <div>
-          <UserHeader
-            user={user}
-            totalElapsedTime={TaskQueries.getTotalElapsedTime(state, ui.now)}
-            showUserMenu={ui.showUserMenu}
-            onToggleMenu={() => ui.setShowUserMenu(!ui.showUserMenu)}
-            onLogout={handleLogout}
-          />
-          <AddTaskForm onAdd={handlers.handleAddTask} />
-          <TaskList
-            tasks={sortedTasks}
-            deletionMode={ui.deletionMode}
-            totalTasksTime={TaskQueries.getTotalElapsedTime(state, ui.now)}
-            onNameChange={handlers.handleUpdateTaskName}
-            onFocus={handlers.handleStartTask}
-            onDelete={handlers.handleDeleteTask}
-          />
-          <Controls
-            sortMode={ui.sortMode}
-            deletionMode={ui.deletionMode}
-            onStopAll={() => ui.setNow(Date.now())}
-            onResetAll={handlers.handleResetAll}
-            onToggleSort={() => ui.setSortMode(prev => prev === 'total' ? 'alphabetical' : 'total')}
-            onToggleDeletion={() => ui.setDeletionMode(!ui.deletionMode)}
-            onDeleteAll={handlers.handleDeleteAllTasks}
-          />
-        </div>
-      )}
-    </div>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <div>
+        <LoginComponent
+          onLoginSuccess={handleLoginSuccess}
+          hidden={true}
+          ref={loginButtonRef}
+        />
+        {user && (
+          <>
+            <UserHeader
+              user={user}
+              totalElapsedTime={TaskQueries.getTotalElapsedTime(state, ui.now)}
+              showUserMenu={ui.showUserMenu}
+              onToggleMenu={() => ui.setShowUserMenu(!ui.showUserMenu)}
+              onLogout={handleLogout}
+              onProfileClick={user.isGuest ? handleProfileClick : undefined}
+            />
+            <AddTaskForm onAdd={handlers.handleAddTask} />
+            <TaskList
+              tasks={sortedTasks}
+              deletionMode={ui.deletionMode}
+              totalTasksTime={TaskQueries.getTotalElapsedTime(state, ui.now)}
+              onNameChange={handlers.handleUpdateTaskName}
+              onFocus={handlers.handleStartTask}
+              onDelete={handlers.handleDeleteTask}
+            />
+            <Controls
+              sortMode={ui.sortMode}
+              deletionMode={ui.deletionMode}
+              onStopAll={() => ui.setNow(Date.now())}
+              onResetAll={handlers.handleResetAll}
+              onToggleSort={() => ui.setSortMode(prev => prev === 'total' ? 'alphabetical' : 'total')}
+              onToggleDeletion={() => ui.setDeletionMode(!ui.deletionMode)}
+              onDeleteAll={handlers.handleDeleteAllTasks}
+            />
+          </>
+        )}
+      </div>
+    </GoogleOAuthProvider>
   )
 }
 

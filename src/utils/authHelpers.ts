@@ -39,11 +39,28 @@ export function saveUserToLocalStorage(user: User): void {
  */
 export function loadUserFromLocalStorage(): User | null {
   const saved = localStorage.getItem('googleUser')
-  if (!saved) return null
+  if (!saved) {
+    // Return guest user if no saved user
+    return createGuestUser()
+  }
   try {
     return JSON.parse(saved)
   } catch {
-    return null
+    return createGuestUser()
+  }
+}
+
+/**
+ * Create an anonymous guest user
+ */
+export function createGuestUser(): User {
+  return {
+    id: 'guest',
+    email: 'guest@local',
+    name: 'Guest',
+    picture: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23999"/><circle cx="50" cy="35" r="20" fill="%23fff"/><ellipse cx="50" cy="80" rx="30" ry="20" fill="%23fff"/></svg>',
+    accessToken: '',
+    isGuest: true
   }
 }
 

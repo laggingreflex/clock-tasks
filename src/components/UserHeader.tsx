@@ -7,6 +7,7 @@ interface UserHeaderProps {
   showUserMenu: boolean
   onToggleMenu: () => void
   onLogout: () => void
+  onProfileClick?: () => void
 }
 
 export function UserHeader({
@@ -14,17 +15,26 @@ export function UserHeader({
   totalElapsedTime,
   showUserMenu,
   onToggleMenu,
-  onLogout
+  onLogout,
+  onProfileClick
 }: UserHeaderProps) {
+  const handleAvatarClick = () => {
+    if (user.isGuest && onProfileClick) {
+      onProfileClick()
+    } else {
+      onToggleMenu()
+    }
+  }
+
   return (
     <div className="header">
       <div>
         <h1>Tasks Clock: {formatTime(totalElapsedTime)}</h1>
       </div>
       <div className="user-info">
-        <div className="user-avatar-container" onClick={onToggleMenu}>
+        <div className="user-avatar-container" onClick={handleAvatarClick} title={user.isGuest ? "Click to sign in" : user.name}>
           <img src={user.picture} alt={user.name} className="user-avatar" />
-          {showUserMenu && (
+          {showUserMenu && !user.isGuest && (
             <button
               className="logout-btn"
               onClick={(e) => {
