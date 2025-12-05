@@ -63,6 +63,7 @@ function App() {
   })
   const [deletionMode, setDeletionMode] = useState(false)
   const [lastAddedTaskId, setLastAddedTaskId] = useState<string | null>(null)
+  const [sortMode, setSortMode] = useState<'total' | 'alphabetical'>('total')
 
   // Save to localStorage whenever state changes
   useEffect(() => {
@@ -240,6 +241,20 @@ function App() {
     }
   }
 
+  const getSortedTasks = () => {
+    const tasksCopy = [...tasks]
+    if (sortMode === 'total') {
+      return tasksCopy.sort((a, b) => b.totalTime - a.totalTime)
+    } else if (sortMode === 'alphabetical') {
+      return tasksCopy.sort((a, b) => a.name.localeCompare(b.name))
+    }
+    return tasksCopy
+  }
+
+  const toggleSort = () => {
+    setSortMode(prev => prev === 'total' ? 'alphabetical' : 'total')
+  }
+
   return (
     <div>
       <h1>Tasks Clock: {formatTime(totalElapsedTime)}</h1>
@@ -247,7 +262,7 @@ function App() {
       <AddTaskForm onAdd={addTask} />
 
       <div className="tasks-list">
-        {tasks.map(task => {
+        {getSortedTasks().map(task => {
           const totalTasksTime = tasks.reduce((sum, t) => sum + t.totalTime, 0)
           const percentage = totalTasksTime > 0 ? ((task.totalTime / totalTasksTime) * 100).toFixed(1) : 0
 
@@ -282,6 +297,12 @@ function App() {
         <div className="controls-buttons">
           <button title="Stop all tasks" onClick={stopAll}>⏹</button>
           <button title="Reset all tasks" onClick={resetAll}>🔄</button>
+          <button
+            title={sortMode === 'total' ? 'Sort: Total Time (descending)' : 'Sort: Alphabetical'}
+            onClick={toggleSort}
+          >
+            {sortMode === 'total' ? '⏱' : '🔤'}
+          </button>
           <button
             title={deletionMode ? "Delete all tasks" : "Enable deletion mode"}
             className={`delete-btn ${deletionMode ? 'deletion-active' : ''}`}
