@@ -10,7 +10,7 @@ export const useTaskState = () => {
   const hasLoggedInit = useRef(false)
 
   // Load from localStorage synchronously for instant UI responsiveness
-  // This is provisional state until Google Drive loads and overrides it
+  // This is provisional state until Firebase loads and overrides it
   const [state, setState] = useState<TaskManagerState>({
     tasks: initialTasks,
     history: initialhistory,
@@ -19,7 +19,7 @@ export const useTaskState = () => {
 
   useEffect(() => {
     if (!hasLoggedInit.current) {
-      log.log(`📱 useTaskState initialized from localStorage: ${initialTasks.length} tasks (provisional, awaiting Google Drive)`)
+      log.log(`📱 useTaskState initialized from localStorage: ${initialTasks.length} tasks (provisional, awaiting Firebase)`)
       hasLoggedInit.current = true
     }
   }, [])

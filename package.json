@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@react-oauth/google": "^0.12.2",
+    "firebase": "^12.6.0",
     "google-auth-library": "^10.5.0",
     "google-drive": "^0.0.8",
     "googleapis": "^167.0.0",
