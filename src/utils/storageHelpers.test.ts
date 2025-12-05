@@ -1,0 +1,165 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import {
+  loadFromLocalStorage,
+  saveToLocalStorage,
+  clearLocalStorage,
+} from './storageHelpers';
+import type { StoredData, TaskData, ClickEvent } from '../types';
+
+describe('storageHelpers', () => {
+  beforeEach(() => {
+    // Clear localStorage before each test
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  describe('saveToLocalStorage and loadFromLocalStorage', () => {
+    it('should save and load empty data', () => {
+      const data: StoredData = {
+        tasks: [],
+        clickHistory: [],
+        lastModified: Date.now(),
+      };
+
+      saveToLocalStorage(data);
+      const loaded = loadFromLocalStorage();
+
+      expect(loaded.tasks).toEqual([]);
+      expect(loaded.clickHistory).toEqual([]);
+    });
+
+    it('should save and load tasks', () => {
+      const tasks: TaskData[] = [
+        { id: '1', name: 'Task 1' },
+        { id: '2', name: 'Task 2' },
+      ];
+      const data: StoredData = {
+        tasks,
+        clickHistory: [],
+        lastModified: Date.now(),
+      };
+
+      saveToLocalStorage(data);
+      const loaded = loadFromLocalStorage();
+
+      expect(loaded.tasks).toEqual(tasks);
+    });
+
+    it('should save and load click history', () => {
+      const clickHistory: ClickEvent[] = [
+        { taskId: '1', timestamp: 1000 },
+        { taskId: '2', timestamp: 2000 },
+      ];
+      const data: StoredData = {
+        tasks: [],
+        clickHistory,
+        lastModified: Date.now(),
+      };
+
+      saveToLocalStorage(data);
+      const loaded = loadFromLocalStorage();
+
+      expect(loaded.clickHistory).toEqual(clickHistory);
+    });
+
+    it('should save and load complete data structure', () => {
+      const data: StoredData = {
+        tasks: [
+          { id: '1', name: 'Task 1' },
+          { id: '2', name: 'Task 2' },
+        ],
+        clickHistory: [
+          { taskId: '1', timestamp: 1000 },
+          { taskId: '2', timestamp: 2000 },
+        ],
+        lastModified: 12345,
+      };
+
+      saveToLocalStorage(data);
+      const loaded = loadFromLocalStorage();
+
+      expect(loaded).toEqual({
+        tasks: data.tasks,
+        clickHistory: data.clickHistory,
+      });
+    });
+  });
+
+  describe('loadFromLocalStorage', () => {
+    it('should return empty state when nothing is saved', () => {
+      const result = loadFromLocalStorage();
+
+      expect(result).toEqual({
+        tasks: [],
+        clickHistory: [],
+      });
+    });
+
+    it('should handle corrupted JSON gracefully', () => {
+      localStorage.setItem('clockTasks', 'invalid json {]');
+
+      const result = loadFromLocalStorage();
+
+      expect(result).toEqual({
+        tasks: [],
+        clickHistory: [],
+      });
+    });
+
+    it('should handle missing tasks property', () => {
+      const data = { clickHistory: [{ taskId: '1', timestamp: 1000 }] };
+      localStorage.setItem('clockTasks', JSON.stringify(data));
+
+      const result = loadFromLocalStorage();
+
+      expect(result.tasks).toEqual([]);
+      expect(result.clickHistory).toEqual(data.clickHistory);
+    });
+
+    it('should handle missing clickHistory property', () => {
+      const data = { tasks: [{ id: '1', name: 'Task' }] };
+      localStorage.setItem('clockTasks', JSON.stringify(data));
+
+      const result = loadFromLocalStorage();
+
+      expect(result.tasks).toEqual(data.tasks);
+      expect(result.clickHistory).toEqual([]);
+    });
+  });
+
+  describe('clearLocalStorage', () => {
+    it('should clear all stored data', () => {
+      const data: StoredData = {
+        tasks: [{ id: '1', name: 'Task' }],
+        clickHistory: [{ taskId: '1', timestamp: 1000 }],
+        lastModified: Date.now(),
+      };
+
+      saveToLocalStorage(data);
+      expect(localStorage.getItem('clockTasks')).not.toBeNull();
+
+      clearLocalStorage();
+      expect(localStorage.getItem('clockTasks')).toBeNull();
+    });
+
+    it('should result in empty state after clearing', () => {
+      const data: StoredData = {
+        tasks: [{ id: '1', name: 'Task' }],
+        clickHistory: [{ taskId: '1', timestamp: 1000 }],
+        lastModified: Date.now(),
+      };
+
+      saveToLocalStorage(data);
+      clearLocalStorage();
+
+      const loaded = loadFromLocalStorage();
+      expect(loaded).toEqual({
+        tasks: [],
+        clickHistory: [],
+      });
+    });
+  });
+});
