@@ -210,7 +210,7 @@ function App() {
           const percentage = totalTasksTime > 0 ? ((task.totalTime / totalTasksTime) * 100).toFixed(1) : 0
 
           return (
-          <div className="task-item" key={task.id}>
+          <div className={`task-item ${task.isRunning ? 'running' : ''}`} key={task.id}>
             <div className="task-inputs">
               <input
                 type="text"
@@ -218,9 +218,9 @@ function App() {
                 onChange={(e) => updateTaskName(task.id, e.target.value)}
                 placeholder="Task name"
               />
-              <button title={task.isRunning ? "Stop task" : "Start task"} onClick={() => startTask(task.id)}>
-                {task.isRunning ? '⏸' : '▶'}
-              </button>
+              {!task.isRunning && (
+                <button title="Start task" onClick={() => startTask(task.id)}>▶</button>
+              )}
               <button title="Delete task" className="delete-btn" onClick={() => deleteTask(task.id)}>🗑</button>
             </div>
             <div className="task-stats">

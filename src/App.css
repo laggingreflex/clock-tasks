@@ -108,6 +108,11 @@ p {
   flex-direction: column;
 }
 
+.task-item.running {
+  background-color: #fff8e1;
+  border-left: 4px solid #ffc107;
+}
+
 .task-inputs {
   display: flex;
   gap: 6px;
