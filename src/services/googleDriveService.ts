@@ -23,7 +23,7 @@ class GoogleDriveService {
         }
       )
       const data = await response.json()
-      
+
       if (data.files && data.files.length > 0) {
         return data.files[0].id
       }
@@ -77,10 +77,10 @@ class GoogleDriveService {
         }
       )
       const createData = await createResponse.json()
-      
+
       // Initialize with empty tasks
       await this.updateTasksFile(createData.id, { tasks: [], totalElapsedTime: 0 })
-      
+
       return createData.id
     } catch (error) {
       console.error('Error finding/creating tasks file:', error)
@@ -96,7 +96,7 @@ class GoogleDriveService {
           headers: this.getHeaders()
         }
       )
-      
+
       if (!response.ok) {
         throw new Error(`Failed to load tasks: ${response.statusText}`)
       }

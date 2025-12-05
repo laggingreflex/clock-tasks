@@ -68,7 +68,7 @@ function App() {
     return saved ? JSON.parse(saved) : null
   })
   const [driveFileId, setDriveFileId] = useState<string | null>(null)
-  
+
   const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem('clockTasks')
     if (saved) {
@@ -101,7 +101,7 @@ function App() {
     if (!user) return
     try {
       const folderId = await googleDriveService.findOrCreateAppFolder()
-      
+
       const fileId = await googleDriveService.findOrCreateTasksFile(folderId)
       setDriveFileId(fileId)
 
@@ -118,7 +118,7 @@ function App() {
   useEffect(() => {
     const data = { tasks, totalElapsedTime }
     localStorage.setItem('clockTasks', JSON.stringify(data))
-    
+
     // Also sync to Google Drive if logged in
     if (user && driveFileId) {
       syncToGoogleDrive(data)
