@@ -81,10 +81,9 @@ describe('storageHelpers', () => {
       saveToLocalStorage(data);
       const loaded = loadFromLocalStorage();
 
-      expect(loaded).toEqual({
-        tasks: data.tasks,
-        history: data.history,
-      });
+      expect(loaded.tasks).toEqual(data.tasks);
+      expect(loaded.history).toEqual(data.history);
+      expect(loaded.lastModified).toBe(data.lastModified);
     });
   });
 
@@ -92,10 +91,9 @@ describe('storageHelpers', () => {
     it('should return empty state when nothing is saved', () => {
       const result = loadFromLocalStorage();
 
-      expect(result).toEqual({
-        tasks: [],
-        history: [],
-      });
+      expect(result.tasks).toEqual([]);
+      expect(result.history).toEqual([]);
+      expect(typeof result.lastModified).toBe('number');
     });
 
     it('should handle corrupted JSON gracefully', () => {
@@ -103,10 +101,9 @@ describe('storageHelpers', () => {
 
       const result = loadFromLocalStorage();
 
-      expect(result).toEqual({
-        tasks: [],
-        history: [],
-      });
+      expect(result.tasks).toEqual([]);
+      expect(result.history).toEqual([]);
+      expect(typeof result.lastModified).toBe('number');
     });
 
     it('should handle missing tasks property', () => {
@@ -156,10 +153,9 @@ describe('storageHelpers', () => {
       clearLocalStorage();
 
       const loaded = loadFromLocalStorage();
-      expect(loaded).toEqual({
-        tasks: [],
-        history: [],
-      });
+      expect(loaded.tasks).toEqual([]);
+      expect(loaded.history).toEqual([]);
+      expect(typeof loaded.lastModified).toBe('number');
     });
   });
 });

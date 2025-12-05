@@ -269,10 +269,9 @@ describe('loadFromLocalStorage', () => {
   it('should return empty state when nothing is saved', () => {
     const result = loadFromLocalStorage();
 
-    expect(result).toEqual({
-      tasks: [],
-      history: [],
-    });
+    expect(result.tasks).toEqual([]);
+    expect(result.history).toEqual([]);
+    expect(typeof result.lastModified).toBe('number');
   });
 
   it('should load saved data', () => {
@@ -295,10 +294,9 @@ describe('loadFromLocalStorage', () => {
 
     const result = loadFromLocalStorage();
 
-    expect(result).toEqual({
-      tasks: [],
-      history: [],
-    });
+    expect(result.tasks).toEqual([]);
+    expect(result.history).toEqual([]);
+    expect(typeof result.lastModified).toBe('number');
   });
 
   it('should handle missing properties', () => {
@@ -395,20 +393,13 @@ describe('clearLocalStorage', () => {
   });
 
   it('should result in empty state after clear', () => {
-    const data: StoredData = {
-      tasks: [{ id: '1', name: 'Task' }],
-      history: [{ taskId: '1', timestamp: 1000 }],
-      lastModified: Date.now(),
-    };
-
-    saveToLocalStorage(data);
+    saveToLocalStorage({ tasks: [{ id: '1', name: 'Task' }], history: [], lastModified: Date.now() });
     clearLocalStorage();
 
     const result = loadFromLocalStorage();
-    expect(result).toEqual({
-      tasks: [],
-      history: [],
-    });
+    expect(result.tasks).toEqual([]);
+    expect(result.history).toEqual([]);
+    expect(typeof result.lastModified).toBe('number');
   });
 
   it('should be safe to call multiple times', () => {

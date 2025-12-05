@@ -1,6 +1,7 @@
 // Google Drive API service for storing tasks
 import { createLogger } from '@/utils/logger'
 import type { StoredData } from '@/core'
+import { serializeData, deserializeData, validateData } from '@/core/storageCore'
 
 declare global {
   interface Window {
@@ -154,9 +155,10 @@ class GoogleDriveService {
         throw new Error(`Failed to load tasks: ${response.statusText}`)
       }
 
-      const data = await response.json()
+      const raw = await response.text()
+      const data = validateData(deserializeData(raw))
       log.log(`☁️ Loaded from Google Drive: ${data.tasks?.length || 0} tasks, ${data.history?.length || 0} clicks`)
-      return data || { tasks: [], history: [], lastModified: Date.now() }
+      return data
     } catch (error) {
       log.error('Error loading tasks from Drive:', error)
       return { tasks: [], history: [], lastModified: Date.now() }
@@ -174,7 +176,7 @@ class GoogleDriveService {
             Authorization: `Bearer ${this.accessToken}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(data)
+          body: serializeData(validateData(data))
         }
       )
 
