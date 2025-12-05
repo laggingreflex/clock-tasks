@@ -68,6 +68,17 @@ function App() {
     localStorage.setItem('clockTasks', JSON.stringify({ tasks, totalElapsedTime }))
   }, [tasks, totalElapsedTime])
 
+  // Handle clicking outside to exit deletion mode
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (deletionMode && !(e.target as HTMLElement).closest('.delete-btn')) {
+        setDeletionMode(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [deletionMode])
+
   // Timer interval - tick every second
   useEffect(() => {
     const interval = setInterval(() => {
@@ -212,7 +223,7 @@ function App() {
   }
 
   return (
-    <div onClick={() => deletionMode && setDeletionMode(false)}>
+    <div>
       <h1>Tasks Clock</h1>
 
       <AddTaskForm onAdd={addTask} />
@@ -226,10 +237,7 @@ function App() {
             <button
               title={deletionMode ? "Delete all tasks" : "Enable deletion mode"}
               className={`delete-btn ${deletionMode ? 'deletion-active' : ''}`}
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDeleteAllClick()
-              }}
+              onClick={handleDeleteAllClick}
             >
               🗑
             </button>
@@ -255,10 +263,7 @@ function App() {
                 <button title="Start task" onClick={() => startTask(task.id)}>▶</button>
               )}
               {deletionMode && (
-                <button title="Delete task" className="delete-btn" onClick={(e) => {
-                  e.stopPropagation()
-                  deleteTask(task.id)
-                }}>🗑</button>
+                <button title="Delete task" className="delete-btn" onClick={() => deleteTask(task.id)}>🗑</button>
               )}
             </div>
             <div className="task-stats">
