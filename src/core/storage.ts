@@ -4,7 +4,9 @@
  */
 
 import type { StoredData, TaskData, ClickEvent, StorageBackend } from './types'
+import { createLogger } from '../utils/logger'
 
+const log = createLogger('Storage')
 const STORAGE_KEY = 'clockTasks'
 
 /**
@@ -14,27 +16,39 @@ export class LocalStorageBackend implements StorageBackend {
   async load(): Promise<StoredData> {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (!saved) {
+      log.debug('LocalStorage load: no saved data, returning empty state')
       return { tasks: [], clickHistory: [], lastModified: Date.now() }
     }
 
     try {
       const data = JSON.parse(saved)
-      return {
+      const result = {
         tasks: data.tasks || [],
         clickHistory: data.clickHistory || [],
         lastModified: data.lastModified || Date.now()
       }
-    } catch {
+      log.log(`📥 LocalStorage load: ${result.tasks.length} tasks, ${result.clickHistory.length} clicks`)
+      log.debug('LocalStorage load details:', result)
+      return result
+    } catch (error) {
+      log.error('LocalStorage load failed:', error)
       return { tasks: [], clickHistory: [], lastModified: Date.now() }
     }
   }
 
   async save(data: StoredData): Promise<void> {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+      log.log(`📤 LocalStorage save: ${data.tasks.length} tasks, ${data.clickHistory.length} clicks`)
+      log.debug('LocalStorage save details:', data)
+    } catch (error) {
+      log.error('LocalStorage save failed:', error)
+    }
   }
 
   async clear(): Promise<void> {
     localStorage.removeItem(STORAGE_KEY)
+    log.log('📤 LocalStorage cleared')
   }
 }
 
@@ -45,15 +59,19 @@ export class InMemoryBackend implements StorageBackend {
   private data: StoredData = { tasks: [], clickHistory: [], lastModified: Date.now() }
 
   async load(): Promise<StoredData> {
-    return structuredClone(this.data)
+    const result = structuredClone(this.data)
+    log.debug(`InMemory load: ${result.tasks.length} tasks, ${result.clickHistory.length} clicks`)
+    return result
   }
 
   async save(data: StoredData): Promise<void> {
     this.data = structuredClone(data)
+    log.debug(`InMemory save: ${data.tasks.length} tasks, ${data.clickHistory.length} clicks`)
   }
 
   async clear(): Promise<void> {
     this.data = { tasks: [], clickHistory: [], lastModified: Date.now() }
+    log.debug('InMemory cleared')
   }
 }
 

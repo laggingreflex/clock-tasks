@@ -1,22 +1,20 @@
 // Google Drive API service for storing tasks
+import { createLogger } from '../utils/logger'
+
 declare global {
   interface Window {
     gapi: any
   }
 }
 
-const PREFIX = '[clock-tasks-drive]'
-const logger = {
-  log: (...args: any[]) => console.log(PREFIX, ...args),
-  debug: (...args: any[]) => console.debug(PREFIX, ...args),
-  error: (...args: any[]) => console.error(PREFIX, ...args)
-}
+const log = createLogger('GoogleDriveService')
 
 class GoogleDriveService {
   private accessToken: string | null = null
 
   setAccessToken(token: string) {
     this.accessToken = token
+    log.debug('Access token set')
     // Also initialize gapi
     if (window.gapi) {
       window.gapi.client.setToken({ access_token: token })
@@ -28,19 +26,26 @@ class GoogleDriveService {
       const script = document.createElement('script')
       script.src = 'https://apis.google.com/js/api.js'
       script.onload = () => {
+        log.debug('gapi script loaded, initializing client...')
         window.gapi.load('client', async () => {
           try {
             await window.gapi.client.init({
               apiKey: import.meta.env.VITE_GOOGLE_CLIENT_ID,
               discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
             })
+            log.log('☁️ Google API initialized')
             resolve(true)
           } catch (error) {
+            log.error('Failed to initialize Google API:', error)
             reject(error)
           }
         })
       }
-      script.onerror = () => reject(new Error('Failed to load gapi'))
+      script.onerror = () => {
+        const err = new Error('Failed to load gapi')
+        log.error('Failed to load gapi script:', err)
+        reject(err)
+      }
       document.head.appendChild(script)
     })
   }
@@ -54,6 +59,7 @@ class GoogleDriveService {
 
   async findOrCreateAppFolder(): Promise<string> {
     try {
+      log.debug('Looking for ClockTasks folder...')
       const response = await fetch(
         'https://www.googleapis.com/drive/v3/files?q=name%3D%27ClockTasks%27%20and%20mimeType%3D%27application%2Fvnd.google-apps.folder%27%20and%20trashed%3Dfalse&spaces=drive&fields=files(id)&pageSize=1',
         {
@@ -63,10 +69,12 @@ class GoogleDriveService {
       const data = await response.json()
 
       if (data.files && data.files.length > 0) {
+        log.log(`☁️ Found ClockTasks folder: ${data.files[0].id}`)
         return data.files[0].id
       }
 
       // Create folder if it doesn't exist
+      log.debug('ClockTasks folder not found, creating...')
       const createResponse = await fetch(
         'https://www.googleapis.com/drive/v3/files?fields=id',
         {
@@ -79,15 +87,17 @@ class GoogleDriveService {
         }
       )
       const createData = await createResponse.json()
+      log.log(`☁️ Created ClockTasks folder: ${createData.id}`)
       return createData.id
     } catch (error) {
-      console.error('Error finding/creating app folder:', error)
+      log.error('Error finding/creating app folder:', error)
       throw error
     }
   }
 
   async findOrCreateTasksFile(folderId: string): Promise<string> {
     try {
+      log.debug('Looking for tasks.json file...')
       const query = `name='tasks.json' and '${folderId}' in parents and trashed=false`
       const response = await fetch(
         `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id)&pageSize=1`,
@@ -98,10 +108,12 @@ class GoogleDriveService {
       const data = await response.json()
 
       if (data.files && data.files.length > 0) {
+        log.log(`☁️ Found tasks.json file: ${data.files[0].id}`)
         return data.files[0].id
       }
 
       // Create file if it doesn't exist
+      log.debug('tasks.json not found, creating...')
       const createResponse = await fetch(
         'https://www.googleapis.com/drive/v3/files?fields=id',
         {
@@ -119,15 +131,17 @@ class GoogleDriveService {
       // Initialize with empty tasks
       await this.updateTasksFile(createData.id, { tasks: [], clickHistory: [], lastModified: Date.now() })
 
+      log.log(`☁️ Created tasks.json file: ${createData.id}`)
       return createData.id
     } catch (error) {
-      console.error('Error finding/creating tasks file:', error)
+      log.error('Error finding/creating tasks file:', error)
       throw error
     }
   }
 
   async loadTasks(fileId: string): Promise<{ tasks: any[]; clickHistory?: any[]; lastModified?: number }> {
     try {
+      log.debug('Loading tasks from Google Drive...')
       const response = await fetch(
         `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
         {
@@ -140,15 +154,17 @@ class GoogleDriveService {
       }
 
       const data = await response.json()
-      logger.debug('Loaded from Google Drive:', { hasData: !!data, hasClickHistory: !!data?.clickHistory, clickHistoryLength: data?.clickHistory?.length })
+      log.log(`☁️ Loaded from Google Drive: ${data.tasks?.length || 0} tasks, ${data.clickHistory?.length || 0} clicks`)
       return data || { tasks: [], clickHistory: [] }
     } catch (error) {
-      logger.error('Error loading tasks from Drive:', error)
+      log.error('Error loading tasks from Drive:', error)
       return { tasks: [], clickHistory: [] }
     }
-  }  async updateTasksFile(fileId: string, data: any): Promise<void> {
+  }
+
+  async updateTasksFile(fileId: string, data: any): Promise<void> {
     try {
-      logger.debug('Syncing to Google Drive:', { hasClickHistory: !!data?.clickHistory, clickHistoryLength: data?.clickHistory?.length, taskCount: data?.tasks?.length })
+      log.debug(`Syncing to Google Drive: ${data.tasks?.length || 0} tasks, ${data.clickHistory?.length || 0} clicks`)
       const response = await fetch(
         `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
         {
@@ -164,9 +180,9 @@ class GoogleDriveService {
       if (!response.ok) {
         throw new Error(`Failed to save tasks: ${response.statusText}`)
       }
-      logger.log('Successfully synced to Google Drive')
+      log.log('☁️ Successfully synced to Google Drive')
     } catch (error) {
-      logger.error('Error saving tasks to Drive:', error)
+      log.error('Error saving tasks to Drive:', error)
       throw error
     }
   }
