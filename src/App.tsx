@@ -68,6 +68,11 @@ function App() {
     localStorage.setItem('clockTasks', JSON.stringify({ tasks, totalElapsedTime }))
   }, [tasks, totalElapsedTime])
 
+  // Update document title with total time
+  useEffect(() => {
+    document.title = `Tasks Clock: ${formatTime(totalElapsedTime)}`
+  }, [totalElapsedTime])
+
   // Handle clicking outside to exit deletion mode
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
