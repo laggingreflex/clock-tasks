@@ -61,6 +61,7 @@ function App() {
     }
     return 0
   })
+  const [deletionMode, setDeletionMode] = useState(false)
 
   // Save to localStorage whenever state changes
   useEffect(() => {
@@ -179,12 +180,35 @@ function App() {
   }
 
   const deleteTask = (id: string) => {
-    setTasks(prevTasks => prevTasks.filter(task => task.id !== id))
+    if (window.confirm('Delete this task?')) {
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== id))
+    }
   }
 
   const deleteAllTasks = () => {
-    setTasks([])
-    setTotalElapsedTime(0)
+    if (window.confirm('Delete all tasks?')) {
+      setTasks([])
+      setTotalElapsedTime(0)
+      setDeletionMode(false)
+    }
+  }
+
+  const toggleDeletionMode = () => {
+    if (deletionMode) {
+      // Exiting deletion mode
+      setDeletionMode(false)
+    } else {
+      // Entering deletion mode
+      setDeletionMode(true)
+    }
+  }
+
+  const handleDeleteAllClick = () => {
+    if (deletionMode) {
+      deleteAllTasks()
+    } else {
+      toggleDeletionMode()
+    }
   }
 
   return (
@@ -199,7 +223,13 @@ function App() {
           <div className="controls-buttons">
             <button title="Stop all tasks" onClick={stopAll}>⏹</button>
             <button title="Reset all tasks" onClick={resetAll}>🔄</button>
-            <button title="Delete all tasks" className="delete-btn" onClick={deleteAllTasks}>🗑🗑🗑</button>
+            <button
+              title={deletionMode ? "Delete all tasks" : "Enable deletion mode"}
+              className={`delete-btn ${deletionMode ? 'deletion-active' : ''}`}
+              onClick={handleDeleteAllClick}
+            >
+              🗑
+            </button>
           </div>
         </div>
       </div>
@@ -221,7 +251,9 @@ function App() {
               {!task.isRunning && (
                 <button title="Start task" onClick={() => startTask(task.id)}>▶</button>
               )}
-              <button title="Delete task" className="delete-btn" onClick={() => deleteTask(task.id)}>🗑</button>
+              {deletionMode && (
+                <button title="Delete task" className="delete-btn" onClick={() => deleteTask(task.id)}>🗑</button>
+              )}
             </div>
             <div className="task-stats">
               {task.isRunning ? (

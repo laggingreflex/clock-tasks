@@ -156,6 +156,11 @@ p {
   background-color: #663333;
 }
 
+.delete-btn.deletion-active {
+  background-color: #ff6666;
+  box-shadow: 0 0 8px rgba(204, 51, 51, 0.5);
+}
+
 form {
   background-color: white;
   padding: 12px;
