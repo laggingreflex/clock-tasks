@@ -19,12 +19,12 @@ class FirebaseService {
   setUserId(userId: string) {
     if (this.currentUserId !== userId) {
       log.log(`🔐 Setting user ID: ${userId}`)
-      
+
       // Clean up old listener if user changed
       if (this.currentUserId) {
         this.stopListening()
       }
-      
+
       this.currentUserId = userId
     }
   }
@@ -52,10 +52,10 @@ class FirebaseService {
 
       const path = this.getUserTasksPath()
       const tasksRef = ref(database, path)
-      
+
       // Serialize data before saving
       const serialized = serializeData(data)
-      
+
       log.debug(`Saving to Firebase: ${data.tasks.length} tasks, ${data.history.length} clicks`)
       await set(tasksRef, serialized)
       log.log('☁️ Saved to Firebase')
@@ -76,10 +76,10 @@ class FirebaseService {
 
       const path = this.getUserTasksPath()
       const tasksRef = ref(database, path)
-      
+
       log.debug('Loading tasks from Firebase...')
       const snapshot = await get(tasksRef)
-      
+
       if (!snapshot.exists()) {
         log.log('☁️ No data in Firebase, initializing empty')
         const emptyData: StoredData = {
@@ -93,7 +93,7 @@ class FirebaseService {
 
       const serialized = snapshot.val()
       const data = deserializeData(serialized)
-      
+
       if (!validateData(data)) {
         log.error('Invalid data from Firebase:', data)
         throw new Error('Invalid data structure from Firebase')
@@ -123,9 +123,9 @@ class FirebaseService {
 
       const path = this.getUserTasksPath()
       const tasksRef = ref(database, path)
-      
+
       log.log('📡 Starting Firebase real-time listener')
-      
+
       // Set up the real-time listener
       onValue(tasksRef, (snapshot) => {
         if (!snapshot.exists()) {
@@ -136,7 +136,7 @@ class FirebaseService {
         try {
           const serialized = snapshot.val()
           const data = deserializeData(serialized)
-          
+
           if (!validateData(data)) {
             log.error('Invalid data from Firebase listener:', data)
             return

@@ -40,41 +40,41 @@ export const useSyncEffect = (
 
   const initializeFirebase = async () => {
     if (!user || user.isGuest || isInitializedRef.current) return
-    
+
     try {
       log.debug('Initializing Firebase sync...')
-      
+
       // Load initial data from Firebase
       const firebaseData = await firebaseService.loadTasks()
-      
+
       // Firebase is authoritative source - override localStorage
       log.log(`☁️ FIREBASE OVERRIDE: Loading ${firebaseData.tasks?.length || 0} tasks, ${firebaseData.history?.length || 0} clicks`)
-      
+
       setState({
         tasks: firebaseData.tasks || [],
         history: firebaseData.history || [],
         lastModified: firebaseData.lastModified || Date.now()
       })
       setLastSyncTime(firebaseData.lastModified || Date.now())
-      
+
       // Also sync to localStorage as cache
       saveToLocalStorage(firebaseData)
-      
+
       // Start real-time listener for updates
       firebaseService.startListening((updatedData) => {
         log.log(`📡 REAL-TIME UPDATE: ${updatedData.tasks.length} tasks, ${updatedData.history.length} clicks`)
-        
+
         setState({
           tasks: updatedData.tasks,
           history: updatedData.history,
           lastModified: updatedData.lastModified
         })
         setLastSyncTime(updatedData.lastModified)
-        
+
         // Keep localStorage in sync
         saveToLocalStorage(updatedData)
       })
-      
+
       setDriveFileId('firebase') // Set a marker that we're using Firebase
       isInitializedRef.current = true
       log.log('✅ Firebase real-time sync active')
@@ -88,15 +88,15 @@ export const useSyncEffect = (
     try {
       if (fileId === 'firebase' && user && !user.isGuest) {
         log.debug(`🔄 Syncing to Firebase: ${dataToSync.tasks.length} tasks, ${dataToSync.history.length} clicks`)
-        
+
         // Simply save to Firebase - no reconciliation needed!
         // Firebase handles conflicts with last-write-wins
         await firebaseService.saveTasks(dataToSync)
-        
+
         // The real-time listener will update other tabs/devices automatically
         log.log(`☁️ Firebase synced`)
         setLastSyncTime(dataToSync.lastModified)
-        
+
         // Also save to localStorage (cache)
         saveToLocalStorage(dataToSync)
       } else {

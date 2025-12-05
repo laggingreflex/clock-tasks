@@ -14,13 +14,13 @@ export async function signInWithGoogle(): Promise<User> {
     const provider = new GoogleAuthProvider()
     // Request Drive scope for future compatibility (though we're using Firebase now)
     provider.addScope('https://www.googleapis.com/auth/drive.file')
-    
+
     log.debug('Starting Google sign-in flow...')
     const result = await signInWithPopup(auth, provider)
-    
+
     const firebaseUser = result.user
     const user = convertFirebaseUserToUser(firebaseUser)
-    
+
     log.log(`✅ User signed in: ${user.name}`)
     return user
   } catch (error) {
