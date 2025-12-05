@@ -212,7 +212,7 @@ function App() {
   }
 
   return (
-    <div>
+    <div onClick={() => deletionMode && setDeletionMode(false)}>
       <h1>Tasks Clock</h1>
 
       <AddTaskForm onAdd={addTask} />
@@ -226,7 +226,10 @@ function App() {
             <button
               title={deletionMode ? "Delete all tasks" : "Enable deletion mode"}
               className={`delete-btn ${deletionMode ? 'deletion-active' : ''}`}
-              onClick={handleDeleteAllClick}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDeleteAllClick()
+              }}
             >
               🗑
             </button>
@@ -252,7 +255,10 @@ function App() {
                 <button title="Start task" onClick={() => startTask(task.id)}>▶</button>
               )}
               {deletionMode && (
-                <button title="Delete task" className="delete-btn" onClick={() => deleteTask(task.id)}>🗑</button>
+                <button title="Delete task" className="delete-btn" onClick={(e) => {
+                  e.stopPropagation()
+                  deleteTask(task.id)
+                }}>🗑</button>
               )}
             </div>
             <div className="task-stats">
