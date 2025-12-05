@@ -55,10 +55,10 @@ import { TaskOperations, TaskQueries, LocalStorageBackend } from '@/core'
 async function cli() {
   const storage = new LocalStorageBackend()
   let state = await storage.load()
-  
+
   state = TaskOperations.addAndStartTask('Work', state)
   const tasks = TaskQueries.getAllTasks(state, Date.now())
-  
+
   console.log(tasks)
 }
 ```
@@ -69,12 +69,12 @@ import { TaskOperations, TaskQueries } from '@/core'
 
 export function useTaskManager() {
   const [state, setState] = useState(initialState)
-  
+
   const addTask = (name) => {
     const newState = TaskOperations.addAndStartTask(name, state)
     setState(newState)
   }
-  
+
   return {
     tasks: TaskQueries.getAllTasks(state, Date.now()),
     addTask
@@ -91,7 +91,7 @@ app.post('/tasks', async (req, res) => {
   let state = await storage.load()
   state = TaskOperations.addAndStartTask(req.body.name, state)
   await storage.save(state)
-  
+
   res.json(TaskQueries.getAllTasks(state, Date.now()))
 })
 ```
@@ -104,7 +104,7 @@ ipcMain.handle('tasks:add', async (event, name) => {
   let state = await storage.load()
   state = TaskOperations.addAndStartTask(name, state)
   await storage.save(state)
-  
+
   return TaskQueries.getAllTasks(state, Date.now())
 })
 ```
