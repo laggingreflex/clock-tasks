@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
+import { jwtDecode } from 'jwt-decode'
+import { googleDriveService } from './services/googleDriveService'
 
 interface Task {
   id: string
@@ -8,6 +11,21 @@ interface Task {
   currentSessionTime: number
   lastSessionTime: number
   totalTime: number
+}
+
+interface User {
+  id: string
+  email: string
+  name: string
+  picture: string
+  accessToken: string
+}
+
+interface DecodedToken {
+  sub: string
+  email: string
+  name: string
+  picture: string
 }
 
 function formatTime(seconds: number): string {
@@ -45,6 +63,12 @@ function formatTime(seconds: number): string {
 }
 
 function App() {
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('googleUser')
+    return saved ? JSON.parse(saved) : null
+  })
+  const [driveFileId, setDriveFileId] = useState<string | null>(null)
+  
   const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem('clockTasks')
     if (saved) {
@@ -65,10 +89,51 @@ function App() {
   const [lastAddedTaskId, setLastAddedTaskId] = useState<string | null>(null)
   const [sortMode, setSortMode] = useState<'total' | 'alphabetical'>('total')
 
+  // Initialize Google Drive when user logs in
+  useEffect(() => {
+    if (user) {
+      googleDriveService.setAccessToken(user.accessToken)
+      initializeGoogleDrive()
+    }
+  }, [user])
+
+  const initializeGoogleDrive = async () => {
+    if (!user) return
+    try {
+      const folderId = await googleDriveService.findOrCreateAppFolder()
+      
+      const fileId = await googleDriveService.findOrCreateTasksFile(folderId)
+      setDriveFileId(fileId)
+
+      // Load tasks from Google Drive
+      const driveData = await googleDriveService.loadTasks(fileId)
+      setTasks(driveData.tasks || [])
+      setTotalElapsedTime(driveData.totalElapsedTime || 0)
+    } catch (error) {
+      console.error('Failed to initialize Google Drive:', error)
+    }
+  }
+
   // Save to localStorage whenever state changes
   useEffect(() => {
-    localStorage.setItem('clockTasks', JSON.stringify({ tasks, totalElapsedTime }))
-  }, [tasks, totalElapsedTime])
+    const data = { tasks, totalElapsedTime }
+    localStorage.setItem('clockTasks', JSON.stringify(data))
+    
+    // Also sync to Google Drive if logged in
+    if (user && driveFileId) {
+      syncToGoogleDrive(data)
+    }
+  }, [tasks, totalElapsedTime, user, driveFileId])
+
+  const syncToGoogleDrive = async (data: any) => {
+    try {
+      if (driveFileId) {
+        await googleDriveService.updateTasksFile(driveFileId, data)
+      }
+    } catch (error) {
+      console.error('Failed to sync to Google Drive:', error)
+    }
+  }
 
   // Update document title with total time
   useEffect(() => {
@@ -257,61 +322,110 @@ function App() {
 
   return (
     <div>
-      <h1>Tasks Clock: {formatTime(totalElapsedTime)}</h1>
-
-      <AddTaskForm onAdd={addTask} />
-
-      <div className="tasks-list">
-        {getSortedTasks().map(task => {
-          const totalTasksTime = tasks.reduce((sum, t) => sum + t.totalTime, 0)
-          const percentage = totalTasksTime > 0 ? ((task.totalTime / totalTasksTime) * 100).toFixed(1) : 0
-
-          return (
-          <div className={`task-item ${task.isRunning ? 'running' : ''}`} key={task.id} id={`task-${task.id}`}>
-            <div className="task-inputs">
-              <input
-                type="text"
-                value={task.name}
-                onChange={(e) => updateTaskName(task.id, e.target.value)}
-                onFocus={() => !task.isRunning && startTask(task.id)}
-                placeholder="Task name"
-              />
-              {deletionMode && (
-                <button title="Delete task" className="delete-btn" onClick={() => deleteTask(task.id)}>🗑</button>
-              )}
+      {!user ? (
+        <div className="login-container">
+          <h1>Tasks Clock</h1>
+          <p>Sign in with Google to sync your tasks</p>
+          <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+            <GoogleLogin
+              onSuccess={(credentialResponse) => {
+                try {
+                  const decoded = jwtDecode<DecodedToken>(credentialResponse.credential as string)
+                  const newUser: User = {
+                    id: decoded.sub,
+                    email: decoded.email,
+                    name: decoded.name,
+                    picture: decoded.picture,
+                    accessToken: credentialResponse.credential as string
+                  }
+                  setUser(newUser)
+                  localStorage.setItem('googleUser', JSON.stringify(newUser))
+                } catch (error) {
+                  console.error('Login failed:', error)
+                }
+              }}
+              onError={() => {
+                console.log('Login Failed')
+              }}
+            />
+          </GoogleOAuthProvider>
+        </div>
+      ) : (
+        <div>
+          <div className="header">
+            <div>
+              <h1>Tasks Clock: {formatTime(totalElapsedTime)}</h1>
             </div>
-            <div className="task-stats">
-              {task.isRunning ? (
-                <span>Current: {formatTime(task.currentSessionTime)}</span>
-              ) : (
-                <span>Last: {formatTime(task.lastSessionTime)}</span>
-              )}
-              <span>Total: {formatTime(task.totalTime)} ({percentage}%)</span>
+            <div className="user-info">
+              <img src={user.picture} alt={user.name} className="user-avatar" />
+              <div>
+                <p className="user-name">{user.name}</p>
+                <p className="user-email">{user.email}</p>
+              </div>
+              <button className="logout-btn" onClick={() => {
+                setUser(null)
+                localStorage.removeItem('googleUser')
+              }}>
+                🚪 Logout
+              </button>
             </div>
           </div>
-        )
-        })}
-      </div>
 
-      <div className="controls">
-        <div className="controls-buttons">
-          <button title="Stop all tasks" onClick={stopAll}>⏹</button>
-          <button title="Reset all tasks" onClick={resetAll}>🔄</button>
-          <button
-            title={sortMode === 'total' ? 'Sort: Total Time (descending)' : 'Sort: Alphabetical'}
-            onClick={toggleSort}
-          >
-            {sortMode === 'total' ? '⏱' : '🔤'}
-          </button>
-          <button
-            title={deletionMode ? "Delete all tasks" : "Enable deletion mode"}
-            className={`delete-btn ${deletionMode ? 'deletion-active' : ''}`}
-            onClick={handleDeleteAllClick}
-          >
-            🗑
-          </button>
+          <AddTaskForm onAdd={addTask} />
+
+          <div className="tasks-list">
+            {getSortedTasks().map(task => {
+              const totalTasksTime = tasks.reduce((sum, t) => sum + t.totalTime, 0)
+              const percentage = totalTasksTime > 0 ? ((task.totalTime / totalTasksTime) * 100).toFixed(1) : 0
+
+              return (
+              <div className={`task-item ${task.isRunning ? 'running' : ''}`} key={task.id} id={`task-${task.id}`}>
+                <div className="task-inputs">
+                  <input
+                    type="text"
+                    value={task.name}
+                    onChange={(e) => updateTaskName(task.id, e.target.value)}
+                    onFocus={() => !task.isRunning && startTask(task.id)}
+                    placeholder="Task name"
+                  />
+                  {deletionMode && (
+                    <button title="Delete task" className="delete-btn" onClick={() => deleteTask(task.id)}>🗑</button>
+                  )}
+                </div>
+                <div className="task-stats">
+                  {task.isRunning ? (
+                    <span>Current: {formatTime(task.currentSessionTime)}</span>
+                  ) : (
+                    <span>Last: {formatTime(task.lastSessionTime)}</span>
+                  )}
+                  <span>Total: {formatTime(task.totalTime)} ({percentage}%)</span>
+                </div>
+              </div>
+            )
+            })}
+          </div>
+
+          <div className="controls">
+            <div className="controls-buttons">
+              <button title="Stop all tasks" onClick={stopAll}>⏹</button>
+              <button title="Reset all tasks" onClick={resetAll}>🔄</button>
+              <button
+                title={sortMode === 'total' ? 'Sort: Total Time (descending)' : 'Sort: Alphabetical'}
+                onClick={toggleSort}
+              >
+                {sortMode === 'total' ? '⏱' : '🔤'}
+              </button>
+              <button
+                title={deletionMode ? "Delete all tasks" : "Enable deletion mode"}
+                className={`delete-btn ${deletionMode ? 'deletion-active' : ''}`}
+                onClick={handleDeleteAllClick}
+              >
+                🗑
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
