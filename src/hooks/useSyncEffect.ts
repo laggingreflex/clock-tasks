@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { googleDriveService } from '@/services/googleDriveService'
 import { createLogger } from '@/utils/logger'
-import { saveToLocalStorage } from '@/core'
+import { saveToLocalStorage, reconcile } from '@/core'
 import type { User } from '@/types'
 import type { StoredData } from '@/core'
 import type { TaskManagerState } from '@/core'
@@ -111,14 +111,13 @@ export const useSyncEffect = (
     // We'll update the ref in the initialization function
   }, [])
 
-  // Check for conflicts before pushing
-  const checkForConflicts = async (fileId: string, localData: StoredData): Promise<{ hasConflict: boolean; serverData?: StoredData }> => {
+  // Check for conflicts and intelligently reconcile
+  const reconcileWithServer = async (fileId: string, localData: StoredData): Promise<StoredData> => {
     try {
-      log.debug('Checking for conflicts with server...')
+      log.debug('Checking for divergence with server...')
       const serverData = await googleDriveService.loadTasks(fileId)
 
-      // If we have a lastSynced reference, check if server data differs from what we last synced
-      // This means another client made changes
+      // If server data is identical to what we last synced, no need to reconcile
       if (lastSyncedDataRef.current) {
         const serverChanged =
           serverData.history.length !== lastSyncedDataRef.current.history.length ||
@@ -126,45 +125,33 @@ export const useSyncEffect = (
           JSON.stringify(serverData.history) !== JSON.stringify(lastSyncedDataRef.current.history) ||
           JSON.stringify(serverData.tasks) !== JSON.stringify(lastSyncedDataRef.current.tasks)
 
-        if (serverChanged) {
-          log.warn(`⚠️ CONFLICT DETECTED: Server data has changed since last sync`)
-          log.debug(`Server: ${serverData.tasks.length} tasks, ${serverData.history.length} clicks`)
-          log.debug(`Last synced: ${lastSyncedDataRef.current.tasks.length} tasks, ${lastSyncedDataRef.current.history.length} clicks`)
-          return { hasConflict: true, serverData }
+        if (!serverChanged) {
+          log.debug('✅ No server changes detected, local data is current')
+          return localData
         }
-      } else {
-        // First sync, no reference yet - check timestamp as fallback
-        log.debug(`Conflict check: Server lastModified=${serverData.lastModified}, Local lastModified=${localData.lastModified}`)
-        if (serverData.lastModified > localData.lastModified) {
-          log.warn(`⚠️ CONFLICT DETECTED: Server data (${new Date(serverData.lastModified).toISOString()}) is newer than local (${new Date(localData.lastModified).toISOString()})`)
-          return { hasConflict: true, serverData }
-        }
+
+        log.warn(`⚠️ Divergence detected: Server has changed since last sync`)
       }
 
-      log.debug('No conflict detected, local data is current')
-      return { hasConflict: false }
+      // Use three-way merge to intelligently reconcile
+      const baseline = lastSyncedDataRef.current || { tasks: [], history: [], lastModified: 0 }
+      const { data: mergedData, conflicts, summary } = reconcile(localData, serverData, baseline)
+
+      if (conflicts.length > 0) {
+        log.warn(`⚠️ ${conflicts.length} conflict(s) found during reconciliation:`)
+        conflicts.forEach(c => {
+          log.warn(`  - ${c.type}: "${c.taskName}"`)
+        })
+        log.log(`   Defaulting to local version for all conflicts`)
+      }
+
+      log.log(`✅ Reconciliation complete: ${summary.tasksKept} tasks, ${summary.clicksAdded} clicks added from server`)
+      return mergedData
     } catch (error) {
-      log.error('Failed to check for conflicts:', error)
-      return { hasConflict: false }
+      log.error('Failed to reconcile with server:', error)
+      // On error, trust local data
+      return localData
     }
-  }
-
-  // Show conflict resolution dialog
-  const showConflictDialog = (serverData: StoredData, localData: StoredData): Promise<'overwrite' | 'discard'> => {
-    return new Promise((resolve) => {
-      const serverTime = new Date(serverData.lastModified).toLocaleString()
-      const localTime = new Date(localData.lastModified).toLocaleString()
-
-      const message = `⚠️ Sync Conflict Detected!\n\nServer data has changed since your last sync.\n\nServer last modified: ${serverTime}\nYour local changes: ${localTime}\n\nWhat would you like to do?\n\n- OK: Overwrite server data with your local changes\n- Cancel: Keep server data and discard your local changes`
-
-      if (confirm(message)) {
-        log.log('👤 User chose to OVERWRITE server data')
-        resolve('overwrite')
-      } else {
-        log.log('👤 User chose to DISCARD local changes')
-        resolve('discard')
-      }
-    })
   }
 
   // Sync to Google Drive and localStorage
@@ -172,42 +159,34 @@ export const useSyncEffect = (
     try {
       if (fileId && user) {
         log.log(`🔄 Starting sync to Google Drive...`)
-        // STEP 1: Check for conflicts before pushing
-        log.debug(`Checking for conflicts before sync...`)
-        const { hasConflict, serverData } = await checkForConflicts(fileId, dataToSync)
+        
+        // Intelligently reconcile local and server data
+        log.debug(`Reconciling with server...`)
+        const reconciledData = await reconcileWithServer(fileId, dataToSync)
 
-        if (hasConflict && serverData) {
-          // STEP 2: Show conflict dialog and wait for user choice
-          const userChoice = await showConflictDialog(serverData, dataToSync)
+        // Push reconciled data to Google Drive
+        log.debug(`Syncing to Google Drive (fileId: ${fileId})...`)
+        await googleDriveService.updateTasksFile(fileId, reconciledData)
+        log.log(`☁️ Google Drive sync: ${reconciledData.tasks.length} tasks, ${reconciledData.history.length} clicks`)
+        setLastSyncTime(reconciledData.lastModified)
 
-          if (userChoice === 'discard') {
-            // User chose to discard local changes, use server data instead
-            log.log(`📥 Discarding local changes, keeping server data`)
-            setState({
-              tasks: serverData.tasks || [],
-              history: serverData.history || [],
-              lastModified: serverData.lastModified || Date.now()
-            })
-            setLastSyncTime(serverData.lastModified || Date.now())
-            saveToLocalStorage(serverData)
-            return
-          }
-          // If 'overwrite', continue with the push below
+        // Update state if reconciliation produced different data
+        if (JSON.stringify(reconciledData) !== JSON.stringify(dataToSync)) {
+          log.log(`📝 Updating local state with reconciled data`)
+          setState({
+            tasks: reconciledData.tasks,
+            history: reconciledData.history,
+            lastModified: reconciledData.lastModified
+          })
         }
 
-        // STEP 3: Push to Google Drive
-        log.debug(`Syncing to Google Drive (fileId: ${fileId})...`)
-        await googleDriveService.updateTasksFile(fileId, dataToSync)
-        log.log(`☁️ Google Drive sync: ${dataToSync.tasks.length} tasks, ${dataToSync.history.length} clicks`)
-        setLastSyncTime(dataToSync.lastModified)
-
-        // STEP 4: Also save to localStorage (cache) simultaneously
-        saveToLocalStorage(dataToSync)
+        // Also save to localStorage (cache) simultaneously
+        saveToLocalStorage(reconciledData)
         log.debug(`📱 LocalStorage cache updated`)
 
-        // STEP 5: Update our baseline for next conflict check
-        lastSyncedDataRef.current = structuredClone(dataToSync)
-        log.debug('Updated baseline data for conflict detection')
+        // Update our baseline for next sync
+        lastSyncedDataRef.current = structuredClone(reconciledData)
+        log.debug('Updated baseline data')
       } else {
         // Guest user: save to localStorage only
         log.debug('Syncing locally (no Google Drive fileId or user)')

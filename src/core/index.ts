@@ -15,6 +15,7 @@
 // Data types
 export type { TaskData, ClickEvent, StoredData, Task, TaskStats, StorageBackend } from './types'
 export type { TaskManagerState, TaskManagerConfig } from './taskManager'
+export type { MergeConflict, MergeResult } from './reconciliation'
 
 // Calculation functions
 export {
@@ -31,6 +32,9 @@ export { LocalStorageBackend, InMemoryBackend, loadFromLocalStorage, saveToLocal
 
 // Task operations and queries
 export { TaskOperations, TaskQueries } from './taskManager'
+
+// Reconciliation
+export { reconcile } from './reconciliation'
 
 // Time formatting
 export { formatTime } from './timeFormatter'
