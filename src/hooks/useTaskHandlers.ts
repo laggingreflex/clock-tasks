@@ -77,12 +77,18 @@ export const useTaskHandlers = (
     updateAndSync(TaskOperations.resetAllTasks(state))
   }
 
+  const handleStopAll = () => {
+    log.log('👤 User action: Stop all tasks')
+    updateAndSync(TaskOperations.stopAllTasks(state))
+  }
+
   return {
     handleAddTask,
     handleStartTask,
     handleUpdateTaskName,
     handleDeleteTask,
     handleDeleteAllTasks,
-    handleResetAll
+    handleResetAll,
+    handleStopAll
   }
 }

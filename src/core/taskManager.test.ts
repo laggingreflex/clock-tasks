@@ -298,21 +298,23 @@ describe('TaskOperations', () => {
     });
   });
 
-  describe('pauseCurrentTask', () => {
-    it('should remove last click', () => {
+  describe('stopAllTasks', () => {
+    it('should add stop sentinel click', () => {
       state.history = [
         { taskId: 'task1', timestamp: 1000 },
         { taskId: 'task2', timestamp: 2000 },
       ];
+      vi.setSystemTime(3000);
 
-      const newState = TaskOperations.pauseCurrentTask(state);
+      const newState = TaskOperations.stopAllTasks(state);
 
-      expect(newState.history).toHaveLength(1);
-      expect(newState.history[0].taskId).toBe('task1');
+      expect(newState.history).toHaveLength(3);
+      expect(newState.history[2].taskId).toBe('__STOP__');
+      expect(newState.history[2].timestamp).toBe(3000);
     });
 
     it('should return unchanged state for empty history', () => {
-      const result = TaskOperations.pauseCurrentTask(state);
+      const result = TaskOperations.stopAllTasks(state);
       expect(result).toBe(state);
     });
 
@@ -320,7 +322,7 @@ describe('TaskOperations', () => {
       state.history = [{ taskId: 'task1', timestamp: 1000 }];
       vi.setSystemTime(7000);
 
-      const newState = TaskOperations.pauseCurrentTask(state);
+      const newState = TaskOperations.stopAllTasks(state);
 
       expect(newState.lastModified).toBe(7000);
     });

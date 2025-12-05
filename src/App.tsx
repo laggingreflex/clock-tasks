@@ -75,7 +75,7 @@ function App() {
             <Controls
               sortMode={ui.sortMode}
               deletionMode={ui.deletionMode}
-              onStopAll={() => ui.setNow(Date.now())}
+              onStopAll={handlers.handleStopAll}
               onResetAll={handlers.handleResetAll}
               onToggleSort={() => ui.setSortMode(prev => prev === 'total' ? 'alphabetical' : 'total')}
               onToggleDeletion={() => ui.setDeletionMode(!ui.deletionMode)}

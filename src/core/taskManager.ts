@@ -185,24 +185,27 @@ export const TaskOperations = {
   },
 
   /**
-   * Pause current running task by removing the last click
+   * Stop all tasks by adding a sentinel click event
+   * This preserves all task history and last session times
    */
-  pauseCurrentTask(
+  stopAllTasks(
     currentState: TaskManagerState,
     getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
     if (currentState.history.length === 0) {
-      log.debug('pauseCurrentTask: no clicks to remove')
+      log.debug('stopAllTasks: no tasks running')
       return currentState
     }
 
-    const lastClick = currentState.history[currentState.history.length - 1]
-    const taskName = currentState.tasks.find(t => t.id === lastClick.taskId)?.name || 'unknown'
-    log.log(`⏸ Pause task: "${taskName}" (id: ${lastClick.taskId})`)
+    const runningTaskId = getRunningTaskId(currentState.history)
+    const taskName = currentState.tasks.find(t => t.id === runningTaskId)?.name || 'unknown'
+    log.log(`⏹ Stop all tasks (was running: "${taskName}")`)
 
+    // Add a click for a non-existent task ID to stop everything
+    // This preserves all history and last session calculations
     return {
       ...currentState,
-      history: currentState.history.slice(0, -1),
+      history: [...currentState.history, { taskId: '__STOP__', timestamp: getTimestamp() }],
       lastModified: getTimestamp()
     }
   }
