@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import { formatTime, TaskQueries } from './core'
+import { saveSortModePreference } from './core/storage'
 import { loadUserFromLocalStorage, saveUserToLocalStorage, clearUserFromLocalStorage, onAuthStateChange, createGuestUser } from './utils/firebaseAuthHelpers'
 import { signOutUser } from './utils/firebaseAuthHelpers'
 import { useClickOutside, useDocumentTitle, useScrollToNewTask, useCurrentTime, useTaskState, useUIState, useSyncEffect, useTaskHandlers, useSortedTasks } from './hooks'
@@ -32,6 +33,11 @@ function App() {
   const { syncToGoogleDrive } = useSyncEffect(user, setState, setDriveFileId, () => {})
   const handlers = useTaskHandlers(state, setState, syncToGoogleDrive, driveFileId, ui.setDeletionMode, ui.setLastAddedTaskId)
   const sortedTasks = useSortedTasks(state, ui.now, ui.sortMode)
+
+  // Save sort mode preference whenever it changes
+  useEffect(() => {
+    saveSortModePreference(ui.sortMode)
+  }, [ui.sortMode])
 
   useCurrentTime(ui.setNow)
   useDocumentTitle(`Tasks Clock: ${formatTime(TaskQueries.getTotalElapsedTime(state, ui.now))}`)

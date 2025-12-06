@@ -78,3 +78,20 @@ export function saveToLocalStorage(data: StoredData): void {
 export function clearLocalStorage(): void {
   localStorage.removeItem(STORAGE_KEY)
 }
+
+/**
+ * Load sort mode preference from storage
+ */
+export function loadSortModePreference(): 'total' | 'alphabetical' {
+  const data = loadFromLocalStorage()
+  return data.sortMode || 'total'
+}
+
+/**
+ * Save sort mode preference to storage
+ */
+export function saveSortModePreference(sortMode: 'total' | 'alphabetical'): void {
+  const data = loadFromLocalStorage()
+  data.sortMode = sortMode
+  saveToLocalStorage(data)
+}

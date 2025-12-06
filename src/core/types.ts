@@ -17,6 +17,7 @@ export interface StoredData {
   tasks: TaskData[]
   history: ClickEvent[] // Chronological list of all task clicks
   lastModified: number
+  sortMode?: 'total' | 'alphabetical' // UI preference for task sorting
 }
 
 export interface Task {

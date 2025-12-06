@@ -14,18 +14,19 @@ export function serializeData(data: StoredData): string {
 export function deserializeData(raw: string | null): StoredData {
   if (!raw) {
     log.debug('No data found, returning empty state')
-    return { tasks: [], history: [], lastModified: Date.now() }
+    return { tasks: [], history: [], lastModified: Date.now(), sortMode: 'total' }
   }
   try {
     const data = JSON.parse(raw)
     return {
       tasks: data.tasks || [],
       history: data.history || [],
-      lastModified: data.lastModified || Date.now()
+      lastModified: data.lastModified || Date.now(),
+      sortMode: data.sortMode || 'total'
     }
   } catch (error) {
     log.error('Failed to parse data:', error)
-    return { tasks: [], history: [], lastModified: Date.now() }
+    return { tasks: [], history: [], lastModified: Date.now(), sortMode: 'total' }
   }
 }
 
@@ -34,6 +35,7 @@ export function validateData(data: StoredData): StoredData {
   return {
     tasks: Array.isArray(data.tasks) ? data.tasks : [],
     history: Array.isArray(data.history) ? data.history : [],
-    lastModified: typeof data.lastModified === 'number' ? data.lastModified : Date.now()
+    lastModified: typeof data.lastModified === 'number' ? data.lastModified : Date.now(),
+    sortMode: data.sortMode === 'alphabetical' || data.sortMode === 'total' ? data.sortMode : 'total'
   }
 }
