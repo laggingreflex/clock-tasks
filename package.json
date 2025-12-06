@@ -10,7 +10,8 @@
     "dev": "vite preview",
     "test": "vitest run",
     "test:ui": "vitest run --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "deploy": "firebase deploy"
   },
   "dependencies": {
     "@react-oauth/google": "^0.12.2",
