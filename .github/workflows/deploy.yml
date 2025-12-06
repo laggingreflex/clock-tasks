@@ -37,6 +37,8 @@ jobs:
       - name: Build
         run: npm run build
         env:
+          # Ensure assets resolve under the repo subpath when deploying to GitHub Pages
+          VITE_BASE_PATH: /clock-tasks/
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_GOOGLE_CLIENT_SECRET: ${{ secrets.VITE_GOOGLE_CLIENT_SECRET }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}

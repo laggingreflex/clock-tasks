@@ -4,7 +4,9 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/clock-tasks/',
+  // Use env to allow different bases for GitHub Pages vs Firebase Hosting.
+  // Default to root ('/') for Firebase; set VITE_BASE_PATH=/clock-tasks/ for GitHub Pages builds.
+  base: process.env.VITE_BASE_PATH || '/',
   server: {
     port: 7428,
   },
