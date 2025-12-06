@@ -2,7 +2,7 @@
 
 A minimalist time tracking application that helps you understand where your time goes. Click tasks to start tracking, click another to switch. Simple, visual, and syncs to the cloud.
 
-
+![screenshot](public/screenshot.gif)
 
 ## Features
 
