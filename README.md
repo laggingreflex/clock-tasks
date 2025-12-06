@@ -1,6 +1,8 @@
 # Clock Tasks
 
-A minimalist time tracking application that helps you understand where your time goes. Click tasks to start tracking, click another to switch. Simple, visual, and syncs with Google Drive.
+A minimalist time tracking application that helps you understand where your time goes. Click tasks to start tracking, click another to switch. Simple, visual, and syncs to the cloud.
+
+
 
 ## Features
 
@@ -41,7 +43,7 @@ npm build
 5. **Delete tasks** via the delete button (appears on hover)
 6. **Reset all timers** with the reset button in controls
 
-Your data automatically saves to Google Drive when signed in, or localStorage in guest mode.
+Your data automatically saves to your selected cloud provider when signed in, or localStorage in guest mode.
 
 ## Architecture
 
@@ -74,7 +76,15 @@ clock-tasks/
 │   │   └── useSortedTasks.ts
 │   │
 │   ├── services/          # External service integrations
-│   │   └── googleDriveService.ts
+│   │   ├── providers/     # Auth + storage provider adapters and factory
+│   │   │   ├── providerConfig.ts
+│   │   │   ├── firebaseAuthProvider.ts
+│   │   │   ├── firebaseStorageProvider.ts
+│   │   │   ├── googleAuthProvider.ts
+│   │   │   ├── googleDriveStorageProvider.ts
+│   │   │   └── types.ts
+│   │   ├── firebaseConfig.ts
+│   │   └── firebaseService.ts
 │   │
 │   ├── utils/             # Application utilities
 │   │   ├── authHelpers.ts
@@ -91,6 +101,32 @@ clock-tasks/
 ├── tsconfig.json          # TypeScript configuration
 └── vitest.config.ts       # Test configuration
 ```
+
+## Provider Adapter Architecture & Guidelines
+
+This app uses an adapter-style provider paradigm for authentication and storage. Providers can be swapped without touching app logic.
+
+- Interface-driven: all storage providers implement the same `StorageProvider` interface (save, load, startListening, stopListening, clear, setUserId)
+- Encapsulated behavior: polling intervals or real-time listeners live inside each provider
+- Factory-based selection: `src/services/providers/providerConfig.ts` picks auth+storage based on `VITE_AUTH_PROVIDER` or localStorage
+- Plug-and-play: identical data shape and methods keep app code compatible
+- Auth coupling: each storage provider pairs with its matching auth provider (Firebase with Firebase Auth; Google Drive with Google OAuth via a shared token store)
+
+### Current Providers
+- Firebase: real-time push via Realtime Database, hierarchical path `users/{userId}/tasks`, instant cross-tab updates, server-side conflict handling
+- Google Drive: polling every ~10s via REST API, stores a single `tasks.json` file in a `ClockTasks` folder, quota-sensitive, consistent interface
+
+### Adding New Providers (e.g., Supabase)
+1. Implement the `StorageProvider` interface
+2. Keep provider-specific details internal (listeners/polling/auth token handling)
+3. Update `providerConfig.ts` to instantiate the new provider pair
+4. Verify save/load/listen/clear semantics and identical data format
+
+### Configure Provider
+- Env var: set `VITE_AUTH_PROVIDER` to `firebase` or `google`
+- Local override: `localStorage.setItem('authProvider', 'firebase' | 'google')`
+
+Notes: Migration docs have been removed; the README is the single source for provider setup.
 
 ### Key Design Principles
 
@@ -110,7 +146,6 @@ The system uses a **history-based** approach:
 
 1. Each task click records a `ClickEvent` with a timestamp
 2. Time is calculated by measuring intervals between consecutive clicks
-3. The last click determines which task is currently running
 4. Current running time is computed as `now - lastClickTimestamp`
 
 **Example Timeline:**
@@ -121,7 +156,6 @@ The system uses a **history-based** approach:
 11:15 → (current time)      → Code: 30min + 15min = 45min total
 ```
 
-This design means:
 - No timers or intervals needed
 - Time persists perfectly across app restarts
 - Queries are just calculations over immutable history
@@ -132,31 +166,23 @@ This design means:
 The `@/core` module exports a complete, framework-agnostic API:
 
 ### TaskOperations (State Mutations)
-
 ```typescript
 import { TaskOperations } from '@/core'
 
-// All operations take current state and return new state
-TaskOperations.addTask(name, state)           // Add task without starting
 TaskOperations.addAndStartTask(name, state)   // Add and immediately start
 TaskOperations.startTask(taskId, state)       // Start/switch to task
 TaskOperations.updateTaskName(id, name, state) // Rename task
-TaskOperations.deleteTask(taskId, state)      // Remove task
 TaskOperations.deleteAllTasks(state)          // Clear all tasks
 TaskOperations.resetAllTasks(state)           // Reset all timers
 TaskOperations.pauseCurrentTask(state)        // Pause current task
 ```
 
-### TaskQueries (Read Operations)
-
 ```typescript
 import { TaskQueries } from '@/core'
 
-// All queries are pure computations
 TaskQueries.getAllTasks(state, now)           // Get all tasks with computed times
 TaskQueries.getTask(taskId, state, now)       // Get single task
 TaskQueries.getCurrentRunningTaskId(state)    // Get active task ID
-TaskQueries.getTotalElapsedTime(state, now)   // Sum of all task times
 TaskQueries.taskExists(taskId, state)         // Check existence
 ```
 
@@ -241,23 +267,20 @@ Tests are organized by module:
 
 All core logic is pure functions, making tests deterministic and fast.
 
-## Google Drive Integration
+## Cloud Provider Integration
 
-The app uses Google Drive API to sync your task data:
+The app supports multiple cloud providers for data sync:
 
-1. **Folder Creation** - Creates a `ClockTasks` folder in your Drive
-2. **File Storage** - Stores `tasks.json` with your data
-3. **Automatic Sync** - Saves on every change
-4. **Conflict Resolution** - Uses `lastModified` timestamp
-5. **Fallback** - Saves locally if sync fails
+- Firebase: real-time sync via listeners, instant updates, hierarchical data, integrated authentication.
+- Google Drive: polling-based sync (every ~10s), data stored as `tasks.json` in Drive folder, uses Google OAuth.
 
 ### Setup Requirements
 
-Create a `.env` file with your Google OAuth credentials:
-
-```env
-VITE_GOOGLE_CLIENT_ID=your-client-id-here.apps.googleusercontent.com
-```
+- Google Drive: create a `.env` file with your Google OAuth credentials:
+  ```env
+  VITE_GOOGLE_CLIENT_ID=your-client-id-here.apps.googleusercontent.com
+  ```
+- Firebase: configure your Firebase project in `src/services/firebaseConfig.ts`.
 
 ## Technology Stack
 
