@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { firebaseService } from '@/services/firebaseService'
+import { getStorageProvider } from '@/services/providers'
 import { createLogger } from '@/utils/logger'
 import { saveToLocalStorage } from '@/core'
 import type { User } from '@/types'
@@ -15,53 +15,54 @@ export const useSyncEffect = (
   setLastSyncTime: (time: number) => void
 ) => {
   const isInitializedRef = useRef(false)
+  const storageProvider = getStorageProvider()
 
-  // Initialize Firebase on user login
+  // Initialize storage provider on user login
   useEffect(() => {
     if (user && !user.isGuest) {
       log.log(`🔐 User logged in: ${user.name}`)
-      firebaseService.setUserId(user.id)
-      initializeFirebase()
+      storageProvider.setUserId(user.id)
+      initializeStorage()
     } else if (user?.isGuest) {
       log.log('👤 Guest mode - using localStorage only')
-      firebaseService.clearUser()
+      storageProvider.clearUser()
       isInitializedRef.current = false
     } else {
       log.log('🔓 User logged out')
-      firebaseService.clearUser()
+      storageProvider.clearUser()
       isInitializedRef.current = false
     }
 
     return () => {
       // Cleanup listener on unmount or user change
-      firebaseService.stopListening()
+      storageProvider.stopListening()
     }
-  }, [user])
+  }, [user, storageProvider])
 
-  const initializeFirebase = async () => {
+  const initializeStorage = async () => {
     if (!user || user.isGuest || isInitializedRef.current) return
 
     try {
-      log.debug('Initializing Firebase sync...')
+      log.debug('Initializing cloud storage sync...')
 
-      // Load initial data from Firebase
-      const firebaseData = await firebaseService.loadTasks()
+      // Load initial data from storage provider
+      const cloudData = await storageProvider.load()
 
-      // Firebase is authoritative source - override localStorage
-      log.log(`☁️ FIREBASE OVERRIDE: Loading ${firebaseData.tasks?.length || 0} tasks, ${firebaseData.history?.length || 0} clicks`)
+      // Cloud storage is authoritative source - override localStorage
+      log.log(`☁️ CLOUD OVERRIDE: Loading ${cloudData.tasks?.length || 0} tasks, ${cloudData.history?.length || 0} clicks`)
 
       setState({
-        tasks: firebaseData.tasks || [],
-        history: firebaseData.history || [],
-        lastModified: firebaseData.lastModified || Date.now()
+        tasks: cloudData.tasks || [],
+        history: cloudData.history || [],
+        lastModified: cloudData.lastModified || Date.now()
       })
-      setLastSyncTime(firebaseData.lastModified || Date.now())
+      setLastSyncTime(cloudData.lastModified || Date.now())
 
       // Also sync to localStorage as cache
-      saveToLocalStorage(firebaseData)
+      saveToLocalStorage(cloudData)
 
       // Start real-time listener for updates
-      firebaseService.startListening((updatedData) => {
+      storageProvider.startListening((updatedData) => {
         log.log(`📡 REAL-TIME UPDATE: ${updatedData.tasks.length} tasks, ${updatedData.history.length} clicks`)
 
         setState({
@@ -75,26 +76,26 @@ export const useSyncEffect = (
         saveToLocalStorage(updatedData)
       })
 
-      setDriveFileId('firebase') // Set a marker that we're using Firebase
+      setDriveFileId('cloud') // Set a marker that we're using cloud storage
       isInitializedRef.current = true
-      log.log('✅ Firebase real-time sync active')
+      log.log('✅ Cloud storage real-time sync active')
     } catch (error) {
-      log.error('Failed to initialize Firebase:', error)
+      log.error('Failed to initialize cloud storage:', error)
     }
   }
 
-  // Sync to Firebase (replaces complex Google Drive reconciliation)
-  const syncToFirebase = async (fileId: string | null, dataToSync: StoredData) => {
+  // Sync to cloud storage (Firebase, Google Drive, etc.)
+  const syncToCloud = async (fileId: string | null, dataToSync: StoredData) => {
     try {
-      if (fileId === 'firebase' && user && !user.isGuest) {
-        log.debug(`🔄 Syncing to Firebase: ${dataToSync.tasks.length} tasks, ${dataToSync.history.length} clicks`)
+      if (fileId === 'cloud' && user && !user.isGuest) {
+        log.debug(`🔄 Syncing to cloud storage: ${dataToSync.tasks.length} tasks, ${dataToSync.history.length} clicks`)
 
-        // Simply save to Firebase - no reconciliation needed!
-        // Firebase handles conflicts with last-write-wins
-        await firebaseService.saveTasks(dataToSync)
+        // Simply save to cloud storage - no reconciliation needed!
+        // Cloud provider handles conflicts with last-write-wins
+        await storageProvider.save(dataToSync)
 
         // The real-time listener will update other tabs/devices automatically
-        log.log(`☁️ Firebase synced`)
+        log.log(`☁️ Cloud storage synced`)
         setLastSyncTime(dataToSync.lastModified)
 
         // Also save to localStorage (cache)
@@ -106,12 +107,12 @@ export const useSyncEffect = (
         log.log(`📱 LocalStorage save: ${dataToSync.tasks.length} tasks, ${dataToSync.history.length} clicks`)
       }
     } catch (error) {
-      log.error('Failed to sync to Firebase:', error)
+      log.error('Failed to sync to cloud storage:', error)
       log.log('📱 Falling back to local storage only')
       // Always fallback to localStorage so we don't lose data
       saveToLocalStorage(dataToSync)
     }
   }
 
-  return { syncToGoogleDrive: syncToFirebase }
+  return { syncToGoogleDrive: syncToCloud }
 }

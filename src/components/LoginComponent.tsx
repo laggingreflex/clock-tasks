@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import type { User } from '@/types'
-import { signInWithGoogle } from '@/utils/firebaseAuthHelpers'
+import { getAuthProvider } from '@/services/providers'
 
 interface LoginComponentProps {
   onLoginSuccess: (user: User) => void
@@ -9,9 +9,11 @@ interface LoginComponentProps {
 
 export const LoginComponent = forwardRef<HTMLButtonElement, LoginComponentProps>(
   function LoginComponent({ onLoginSuccess, hidden }, ref) {
+    const authProvider = getAuthProvider()
+
     const handleLogin = async () => {
       try {
-        const user = await signInWithGoogle()
+        const user = await authProvider.signIn()
         onLoginSuccess(user)
       } catch (error) {
         console.error('Login failed:', error)

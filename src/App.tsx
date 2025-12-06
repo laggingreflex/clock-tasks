@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import { formatTime, TaskQueries } from './core'
 import { saveSortModePreference } from './core/storage'
-import { loadUserFromLocalStorage, saveUserToLocalStorage, clearUserFromLocalStorage, onAuthStateChange, createGuestUser } from './utils/firebaseAuthHelpers'
-import { signOutUser } from './utils/firebaseAuthHelpers'
+import { getAuthProvider, logProviderConfiguration } from './services/providers'
 import { useClickOutside, useDocumentTitle, useScrollToNewTask, useCurrentTime, useTaskState, useUIState, useSyncEffect, useTaskHandlers, useSortedTasks } from './hooks'
 import { LoginComponent } from './components/LoginComponent'
 import { AddTaskForm } from './components/AddTaskForm'
@@ -13,20 +12,27 @@ import { Controls } from './components/Controls'
 import type { User } from './types'
 
 function App() {
-  const [user, setUser] = useState<User | null>(loadUserFromLocalStorage)
+  const authProvider = getAuthProvider()
+
+  const [user, setUser] = useState<User | null>(() => authProvider.loadUser())
   const [driveFileId, setDriveFileId] = useState<string | null>(null)
   const loginButtonRef = useRef<HTMLButtonElement>(null)
 
-  // Listen for Firebase auth state changes
+  // Initialize provider configuration logging on mount
   useEffect(() => {
-    const unsubscribe = onAuthStateChange((firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser)
-        saveUserToLocalStorage(firebaseUser)
+    logProviderConfiguration()
+  }, [])
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const unsubscribe = authProvider.onAuthStateChange((authUser) => {
+      if (authUser) {
+        setUser(authUser)
+        authProvider.saveUser(authUser)
       }
     })
     return unsubscribe
-  }, [])
+  }, [authProvider])
 
   const { state, setState } = useTaskState()
   const ui = useUIState()
@@ -47,10 +53,10 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await signOutUser()
-      clearUserFromLocalStorage()
+      await authProvider.signOut()
+      authProvider.clearUser()
       // Reset to guest user
-      setUser(createGuestUser())
+      setUser(authProvider.createGuestUser())
     } catch (error) {
       console.error('Logout failed:', error)
     }
@@ -58,7 +64,7 @@ function App() {
 
   const handleLoginSuccess = (newUser: User) => {
     setUser(newUser)
-    saveUserToLocalStorage(newUser)
+    authProvider.saveUser(newUser)
   }
 
   const handleProfileClick = () => {
