@@ -1,356 +1,271 @@
 # Clock Tasks
 
-A minimalist time tracking application that helps you understand where your time goes. Click tasks to start tracking, click another to switch. Simple, visual, and syncs to the cloud.
+Clock Tasks is a local-first, click-driven time tracker built with React 19, TypeScript, and Vite. Every task switch is stored as an immutable history event so totals are always reproducible, whether you stay in guest mode or sign in and sync through Firebase or Google Drive.
 
-![screenshot](public/screenshot.gif)
+![Animated demo of Clock Tasks](public/screenshot.gif)
 
-## Features
+## Highlights
+- **Local-first guest mode** - `useTaskState` hydrates the UI from `localStorage` (key `clockTasks`) immediately; signing in later simply overrides that state and keeps the cache fresh for offline access.
+- **Single-click task switching** - focusing any task row calls `TaskOperations.startTask`, so every click appends a `ClickEvent` instead of running timers and ensures a perfect audit trail.
+- **Live stats everywhere** - `useCurrentTime` ticks every second, `TaskQueries.getAllTasks` recomputes totals, and both the header and document title show the formatted total via `formatTime`.
+- **Cloud sync choices** - Firebase Realtime Database (default) pushes updates instantly, Google Drive polling (~10 s interval) is available via `VITE_AUTH_PROVIDER=google`, and both paths fall back to local persistence if anything fails.
+- **Inline management controls** - add tasks with Enter, rename inline, toggle deletion mode to reveal delete buttons, stop/reset all timers, switch sort (total vs alphabetical), and flip read-only mode (adds or removes `?readonly` in the URL).
+- **Framework-agnostic core** - everything in `src/core` is pure TypeScript (calculations, storage helpers, task manager, time formatting, tests) so the same business logic can back CLIs, native apps, or automation scripts.
 
-- **One-Click Tracking** - Click any task to start timing, click another to switch instantly
-- **Visual Time Distribution** - See at a glance what's consuming your time with proportional task bars
-- **Google Drive Sync** - Your data syncs automatically across devices via Google Drive
-- **Guest Mode** - Try it immediately without signing in (local storage only)
-- **Real-time Updates** - Watch your time accumulate in real-time
-- **Clean Architecture** - Framework-agnostic core logic that can be reused anywhere
+## Usage & UI Behavior
+1. **Sign in only if you need cloud sync.** The app loads as a guest using `authProvider.loadUser()`. Click the avatar to trigger the hidden `<LoginComponent>` button; after signing in, a logout button appears inside the avatar menu.
+2. **Add tasks inline.** `AddTaskForm` calls `TaskOperations.addAndStartTask`, so pressing Enter both creates and focuses the new task. IDs are timestamp-based so chronological order matches creation time.
+3. **Start or switch tasks by focusing fields.** Each task row is just an `<input>`. Focusing it calls `useTaskHandlers.handleStartTask`, appends a history event, and ignores clicks on the already running task.
+4. **Rename tasks without modals.** Editing the text box triggers `TaskOperations.updateTaskName` immediately. No blur/save buttons are needed.
+5. **Delete safely.** Tap the 🗑 button in the Controls bar once to enter deletion mode (delete buttons render inside every row). Each delete and delete-all action uses `window.confirm` before mutating state.
+6. **Stop or reset all timers.** ⏹ appends a sentinel `ClickEvent` (`taskId="__STOP__"`) so nothing is "running"; 🔄 clears `history` but keeps the task list intact.
+7. **Sort & persist preferences.** The ⏱/🔤 toggle switches between total time and alphabetical order. The preference is stored as `sortMode` alongside the task data inside the `clockTasks` blob.
+8. **Read-only mode.** Clicking the lock icon rewrites the current location with or without the `readonly` query param and reloads the page. While `OptionsContext` reports `{ readOnly: true }`, `useTaskHandlers` and `useSyncEffect` short-circuit, so no local or cloud writes occur.
+9. **Sync model.** `useSyncEffect` memoizes the current `StorageProvider`, loads cloud data once you are signed in, mirrors every change back to local storage, and starts the provider’s listener (`onValue` for Firebase or polling for Google Drive). In guest mode it clears the provider user ID and relies solely on local storage.
 
 ## Quick Start
-
-### Development
+Requirements: Node 18+ (Vite 5), npm 10+, and the Firebase CLI if you plan to deploy.
 
 ```bash
-# Install dependencies
-npm install
-
-# Start development server (port 7428)
-npm start
-
-# Run tests
-npm test
-
-# Run tests with UI
-npm test:ui
-
-# Build for production
-npm build
+npm install                  # install dependencies
+npm start                    # Vite dev server on port 7428 (see vite.config.ts)
+npm run build                # type-check (tsc -b) + Vite production build to dist/
+npm run dev                  # vite preview (serves the last build)
+npm test                     # builds first, then runs Vitest in run mode
+npm run test:ui              # builds first, then launches the Vitest UI
+npm run test:coverage        # builds first, then outputs V8 coverage
+npm run lint                 # eslint flat config with react-hooks/react-refresh rules
+npm run deploy               # build then firebase deploy (requires firebase-tools)
 ```
 
-### Usage
+The test scripts intentionally run `npm run build` before Vitest so they always execute against the latest compiled artifacts.
 
-1. **Sign in** with Google (or continue as guest)
-2. **Add tasks** by typing in the input field and pressing Enter
-3. **Click tasks** to start/switch between them
-4. **Rename tasks** by clicking the name and editing inline
-5. **Delete tasks** via the delete button (appears on hover)
-6. **Reset all timers** with the reset button in controls
+## Configuration
+### Environment
+Create a `.env` (or `.env.local`) next to `package.json` and provide the Firebase and Google settings referenced in `src/services/firebaseConfig.ts` and `src/services/providers/googleAuthProvider.ts`:
 
-Your data automatically saves to your selected cloud provider when signed in, or localStorage in guest mode.
+```ini
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_DATABASE_URL=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_FIREBASE_MEASUREMENT_ID=...
+VITE_GOOGLE_CLIENT_ID=your-oauth-client.apps.googleusercontent.com
+VITE_AUTH_PROVIDER=firebase   # or google
+VITE_BASE_PATH=/              # optional, overrides Vite base for static hosting
+```
 
-## Architecture
+`firebaseConfig.ts` throws on startup if any required Firebase variable is missing.
 
-The project follows a clean architecture with strict separation of concerns:
+### Provider selection
+`getCurrentProviderName()` checks `import.meta.env.VITE_AUTH_PROVIDER` first, then `localStorage.getItem('authProvider')`, defaulting to Firebase. Call `setCurrentProvider('google')` (from the browser console) to persist the override for the current device. `logProviderConfiguration()` writes the final choice to the console on every app boot.
+
+### Read-only mode
+Append `?readonly` (value optional) to the URL or use the lock button in the Controls bar. The button rewrites `window.location.href`, so toggling read-only refreshes the app to guarantee the option propagates through `OptionsContext`.
+
+## Architecture Overview
+Clock Tasks enforces a three-layer separation:
+1. **Core (`src/core`)** - pure TypeScript business logic (`calculations.ts`, `taskManager.ts`, `storage.ts`, `storageCore.ts`, `timeFormatter.ts`, `types.ts`, `index.ts`, plus vitest suites such as `calculations.test.ts`, `taskManager.test.ts`, `storage.test.ts`, `persistence.diagnostic.test.ts`). `reconciliation.ts` still lives here as a reference implementation but is not imported anywhere.
+2. **Providers (`src/services/providers`)** - browser/cloud adapters implementing shared interfaces in `types.ts`, plus `providerConfig.ts` for selecting Firebase or Google backends and memoizing singleton instances. `LocalStorageBackend` also lives here because browser APIs are not allowed inside `src/core`.
+3. **React UI (`src/components`, `src/hooks`, `src/styles`, `App.tsx`, `main.tsx`)** - hooks orchestrate state (`useTaskState`, `useTaskHandlers`, `useSyncEffect`, `useUIState`, `useSortedTasks`, `OptionsContext`, and helper hooks like `useClickOutside`, `useDocumentTitle`, `useScrollToNewTask`, `useCurrentTime`). Components (`AddTaskForm`, `TaskList`, `TaskItem`, `Controls`, `UserHeader`, `LoginComponent`) stay thin and declarative. `ConflictDialog.tsx` (and its CSS) is present but currently unused.
+
+Supporting folders:
+- `src/services/firebaseConfig.ts` bootstraps Firebase Auth + Realtime Database; `src/services/firebaseService.ts` and `src/utils/firebaseAuthHelpers.ts` remain for historical reference but are not imported.
+- `src/utils/logger.ts` hosts the `createLogger` helper referenced throughout the core/services layers.
+- `src/types/index.ts` re-exports the core types and declares the `User` shape used in the UI layer.
+- `src/archive/` keeps the deprecated Google Drive service and documentation so older migrations remain traceable.
+- `public/` contains icons and the README GIF; `dist/` holds production builds.
 
 ```
 clock-tasks/
-├── src/
-│   ├── core/              # Framework-agnostic business logic
-│   │   ├── types.ts       # Data structures and interfaces
-│   │   ├── calculations.ts # Pure time calculation functions
-│   │   ├── taskManager.ts  # State operations and queries
-│   │   ├── storageCore.ts  # Serialization/validation utilities (provider-agnostic)
-│   │   ├── storage.ts      # In-memory backend (tests) and core-only abstractions
-│   │   ├── timeFormatter.ts # Time formatting utilities
-│   │   └── index.ts        # Public API
-│   │
-│   ├── components/        # React UI components
-│   │   ├── LoginComponent.tsx
-│   │   ├── AddTaskForm.tsx
-│   │   ├── TaskList.tsx
-│   │   ├── TaskItem.tsx
-│   │   ├── UserHeader.tsx
-│   │   └── Controls.tsx
-│   │
-│   ├── hooks/             # Custom React hooks
-│   │   ├── useTaskState.ts
-│   │   ├── useTaskHandlers.ts
-│   │   ├── useSyncEffect.ts
-│   │   ├── useUIState.ts
-│   │   └── useSortedTasks.ts
-│   │
-│   ├── services/          # External service integrations
-│   │   ├── providers/     # Auth + storage provider adapters and factory (browser/cloud specific)
-│   │   │   ├── providerConfig.ts
-│   │   │   ├── firebaseAuthProvider.ts
-│   │   │   ├── firebaseStorageProvider.ts
-│   │   │   ├── localStorageProvider.ts
-│   │   │   ├── googleAuthProvider.ts
-│   │   │   ├── googleDriveStorageProvider.ts
-│   │   │   └── types.ts
-│   │   ├── firebaseConfig.ts
-│   │   └── (deprecated) firebaseService.ts
-│   │
-│   ├── utils/             # Application utilities
-│   │   ├── authHelpers.ts
-│   │   ├── storageHelpers.ts
-│   │   └── logger.ts
-│   │
-│   ├── types/             # Application-specific types
-│   │   └── index.ts       # User type and core re-exports
-│   │
-│   ├── App.tsx            # Main application component
-│   └── main.tsx           # Application entry point
-│
-├── vite.config.ts         # Vite configuration
-├── tsconfig.json          # TypeScript configuration
-└── vitest.config.ts       # Test configuration
+  src/
+    App.tsx, main.tsx
+    core/
+      calculations.ts
+      taskManager.ts
+      storage.ts, storageCore.ts
+      timeFormatter.ts, types.ts, index.ts
+      reconciliation.ts (unused helper)
+      *.test.ts (Vitest suites)
+    components/
+      AddTaskForm.tsx, Controls.tsx, TaskItem.tsx, TaskList.tsx,
+      LoginComponent.tsx, UserHeader.tsx, ConflictDialog.tsx
+    hooks/
+      OptionsContext.ts
+      useTaskState.ts, useTaskHandlers.ts, useSyncEffect.ts,
+      useUIState.ts, useSortedTasks.ts
+      index.ts exports useClickOutside/useDocumentTitle/useScrollToNewTask/useCurrentTime
+    services/
+      firebaseConfig.ts, firebaseService.ts (legacy)
+      providers/
+        types.ts, providerConfig.ts
+        firebaseAuthProvider.ts, firebaseStorageProvider.ts
+        googleAuthProvider.ts, googleDriveStorageProvider.ts
+        localStorageProvider.ts
+    utils/
+      logger.ts, storageHelpers.ts, firebaseAuthHelpers.ts (legacy)
+    styles/
+      App.css, styles/ConflictDialog.css, etc.
+    archive/
+      googleDriveService.ts, README.md
 ```
 
-## Three-Layer Architecture & Provider Guidelines
+## Layering & Provider Guidelines
+- `AuthProvider` and `StorageProvider` interfaces (in `src/services/providers/types.ts`) define the contract for Firebase, Google, or any future backend. Storage providers extend the core `StorageBackend` with `setUserId`, `startListening`, `stopListening`, `clearUser`, and `isListening` for real-time coordination.
+- `providerConfig.ts` caches provider instances, shares Google OAuth tokens via `GoogleTokenStore`, and exposes `getAuthProvider()`, `getStorageProvider()`, and `setCurrentProvider()` helpers.
+- `useSyncEffect` memoizes whichever provider is selected and exposes a function named `syncToGoogleDrive`. The name is historical—the function simply persists via the active provider whenever `driveFileId === 'cloud'` (the sentinel meaning "cloud sync is live").
+- `LocalStorageBackend` implements the core `StorageBackend` interface and powers guest mode and local caching even while cloud sync is active.
+- Real-time Firebase updates use `onValue` and deduplicate payloads by tracking `lastModified`. Google Drive polling compares file contents every ~10 seconds. Both approaches call the same callback shape (`(data: StoredData) => void`).
+- `useTaskHandlers` wraps every user action in `updateAndSync`, ensuring local state updates and persistence stay in lockstep. When `readOnly` is true, the handlers exit early and no persistence occurs.
+- Legacy helpers (`src/services/firebaseService.ts`, `src/utils/firebaseAuthHelpers.ts`, `src/core/reconciliation.ts`, `src/components/ConflictDialog.tsx`) remain in the repo for reference but are not wired into the runtime UI.
 
-This app enforces a strict 3-layer separation:
+### Adding a new provider
+1. Implement `AuthProvider` and/or `StorageProvider` in `src/services/providers/` (e.g., Supabase, Appwrite).
+2. Keep provider-specific logic (polling intervals, auth refresh, token handling) inside that module.
+3. Register the provider inside `providerConfig.ts` so `getAuthProvider`/`getStorageProvider` can instantiate it.
+4. Ensure the storage adapter reads/writes `StoredData` via `serializeData`, `deserializeData`, and `validateData` to stay compatible with the rest of the app.
 
-1. Core (src/core): pure business logic, types, calculations, task state operations, and provider-agnostic storage utilities in `storageCore.ts`. No browser/cloud/auth imports.
-2. Storage Abstractions: interfaces and in-memory backend in `core/storage.ts` — useful for tests and non-browser environments.
-3. Providers (src/services/providers): browser/cloud-specific implementations for auth and storage (Firebase, Google Drive, LocalStorage), plus the provider factory. These may use browser APIs and SDKs.
+## Data Flow & Time Tracking
+- Clicking a task adds a `ClickEvent { taskId, timestamp }` to `state.history`.
+- When another task is clicked, the duration of the previous session is derived by comparing timestamps. No timers or intervals hold mutable state.
+- `stopAllTasks` appends a synthetic click targeting `__STOP__` to mark "no active task".
+- `resetAllTasks` clears `history` but preserves `tasks` so you can restart later.
+- Because `history` is append-only, you can reconstruct any point in time, and cloud merges are deterministic.
 
-Providers use an adapter-style pattern; they can be swapped without touching app logic.
-
-- Interface-driven: all storage providers implement the same `StorageProvider` interface (save, load, startListening, stopListening, clear, setUserId)
-- Encapsulated behavior: polling intervals or real-time listeners live inside each provider
-- Factory-based selection: `src/services/providers/providerConfig.ts` picks auth+storage based on `VITE_AUTH_PROVIDER` or localStorage
-- Plug-and-play: identical data shape and methods keep app code compatible
-- Auth coupling: each storage provider pairs with its matching auth provider (Firebase with Firebase Auth; Google Drive with Google OAuth via a shared token store)
-
-### Current Providers
-- Firebase: real-time push via Realtime Database, hierarchical path `users/{userId}/tasks`, instant cross-tab updates, server-side conflict handling
-- Google Drive: polling every ~10s via REST API, stores a single `tasks.json` file in a `ClockTasks` folder, quota-sensitive, consistent interface
- - LocalStorage: simple browser-local persistence; used for guest mode and instant UI seeding. See `services/providers/localStorageProvider.ts`.
-
-### Adding New Providers (e.g., Supabase)
-1. Implement the `StorageProvider` interface
-2. Keep provider-specific details internal (listeners/polling/auth token handling)
-3. Update `providerConfig.ts` to instantiate the new provider pair
-4. Verify save/load/listen/clear semantics and identical data format
-
-### Configure Provider
-- Env var: set `VITE_AUTH_PROVIDER` to `firebase` or `google`
-- Local override: `localStorage.setItem('authProvider', 'firebase' | 'google')`
-
-Notes: Migration docs have been removed; the README is the single source for provider setup.
-
-### Key Design Principles
-
-1. **Core Logic Isolation** - Business logic in `src/core/` has zero React dependencies and can run in Node.js, CLI, or any other environment
-
-2. **Immutable State** - All operations return new state objects; no mutations
-
-3. **Path Aliases** - Consistent imports using `@/core`, `@/components`, `@/hooks`, `@/utils`, `@/services`
-
-4. **Type Safety** - Full TypeScript coverage with strict mode enabled
-
-5. **Pure Functions** - Calculations are deterministic with no side effects
-
-## How Time Tracking Works
-
-The system uses a **history-based** approach:
-
-1. Each task click records a `ClickEvent` with a timestamp
-2. Time is calculated by measuring intervals between consecutive clicks
-4. Current running time is computed as `now - lastClickTimestamp`
-
-**Example Timeline:**
+Example timeline:
 ```
-10:00 → Click "Code"        → Code starts
-10:30 → Click "Meeting"     → Code: 30min, Meeting starts
-11:00 → Click "Code"        → Meeting: 30min, Code resumes
-11:15 → (current time)      → Code: 30min + 15min = 45min total
+10:00 -> Click "Code"      -> Code runs
+10:30 -> Click "Meeting"   -> Code gains 30m, Meeting runs
+11:00 -> Click "Code"      -> Meeting gains 30m, Code resumes
+11:15 -> (now)             -> Code total = 45m (30 + 15)
 ```
-
-- No timers or intervals needed
-- Time persists perfectly across app restarts
-- Queries are just calculations over immutable history
-- Can reconstruct any point in time
 
 ## Core Module API
+```ts
+import {
+  TaskOperations,
+  TaskQueries,
+  InMemoryBackend,
+  formatTime,
+} from '@/core'
 
-The `@/core` module exports a complete, framework-agnostic API:
+// Task mutations return brand-new TaskManagerState objects
+const afterAdd = TaskOperations.addTask('Research', state)
+const afterAddAndStart = TaskOperations.addAndStartTask('Write docs', state)
+const afterStart = TaskOperations.startTask(taskId, state)
+const afterRename = TaskOperations.updateTaskName(taskId, 'Review', state)
+const afterDelete = TaskOperations.deleteTask(taskId, state)
+const cleared = TaskOperations.deleteAllTasks(state)
+const reset = TaskOperations.resetAllTasks(state)
+const stopped = TaskOperations.stopAllTasks(state)
 
-### TaskOperations (State Mutations)
-```typescript
-import { TaskOperations } from '@/core'
+// Queries compute view models from immutable state + "now"
+const tasks = TaskQueries.getAllTasks(state, Date.now())
+const single = TaskQueries.getTask(taskId, state, Date.now())
+const runningId = TaskQueries.getCurrentRunningTaskId(state)
+const totalSeconds = TaskQueries.getTotalElapsedTime(state, Date.now())
+const exists = TaskQueries.taskExists(taskId, state)
 
-TaskOperations.addAndStartTask(name, state)   // Add and immediately start
-TaskOperations.startTask(taskId, state)       // Start/switch to task
-TaskOperations.updateTaskName(id, name, state) // Rename task
-TaskOperations.deleteAllTasks(state)          // Clear all tasks
-TaskOperations.resetAllTasks(state)           // Reset all timers
-TaskOperations.pauseCurrentTask(state)        // Pause current task
-```
-
-```typescript
-import { TaskQueries } from '@/core'
-
-TaskQueries.getAllTasks(state, now)           // Get all tasks with computed times
-TaskQueries.getTask(taskId, state, now)       // Get single task
-TaskQueries.getCurrentRunningTaskId(state)    // Get active task ID
-TaskQueries.taskExists(taskId, state)         // Check existence
-```
-
-### Storage Backends
-
-```typescript
-// Core provides only InMemoryBackend (for tests and non-browser runs)
-import { InMemoryBackend } from '@/core'
-
-// LocalStorage backend lives in providers (browser-specific)
-import { LocalStorageBackend } from '@/services/providers'
-
-// Use localStorage
-const storage = new LocalStorageBackend()
-
-// Or in-memory (for testing)
+// Storage helpers
 const storage = new InMemoryBackend()
+await storage.save(reset)
+const snapshot = await storage.load()
 
-// Interface:
-await storage.load()        // → { tasks, history, lastModified }
-await storage.save(data)    // → void
-await storage.clear()       // → void
+// Formatting
+formatTime(3661) // => "1.0h"
 ```
 
-### Utilities
-
-```typescript
-import { formatTime } from '@/core'
-
-formatTime(45)      // "45s"
-formatTime(120)     // "2.0m"
-formatTime(3661)    // "1.0h"
-```
+`LocalStorageBackend` (in `src/services/providers/localStorageProvider.ts`) implements the same `StorageBackend` contract for browser use, and helper exports (`loadFromLocalStorage`, `saveToLocalStorage`, `loadSortModePreference`, `saveSortModePreference`) keep guest mode and UI preferences in sync.
 
 ## Data Types
-
-```typescript
-// Stored data
+```ts
 interface TaskData {
-  id: string      // Unique ID (timestamp-based)
-  name: string    // Task name
+  id: string
+  name: string
 }
 
 interface ClickEvent {
-  taskId: string    // Which task was clicked
-  timestamp: number // Unix timestamp (ms)
+  taskId: string
+  timestamp: number
 }
 
 interface StoredData {
   tasks: TaskData[]
   history: ClickEvent[]
   lastModified: number
+  sortMode?: 'total' | 'alphabetical'
 }
 
-// Computed data (not stored)
 interface Task {
   id: string
   name: string
-  isRunning: boolean          // Is this currently active?
-  currentSessionTime: number  // Current session duration (seconds)
-  lastSessionTime: number     // Previous session duration (seconds)
-  totalTime: number           // Total accumulated time (seconds)
+  isRunning: boolean
+  currentSessionTime: number
+  lastSessionTime: number
+  totalTime: number
+}
+
+interface TaskManagerState {
+  tasks: TaskData[]
+  history: ClickEvent[]
+  lastModified: number
 }
 ```
 
+`serializeData`, `deserializeData`, and `validateData` (see `src/core/storageCore.ts`) enforce this shape across localStorage, Firebase, Google Drive, and automated tests.
+
+## Cloud Providers
+### Firebase (default)
+- `FirebaseAuthProvider` wraps Firebase Auth with Google sign-in and persists the serialized `User` inside `localStorage`.
+- `FirebaseStorageProvider` writes to `users/{userId}/tasks` in the Realtime Database. Payloads are serialized JSON strings produced by `serializeData` to guarantee cross-provider parity.
+- `startListening` attaches a single `onValue` listener per user and suppresses duplicate updates by caching `lastModified`.
+
+### Google Drive
+- `GoogleAuthProvider` loads the `gapi` script, requests the `drive.file` scope, and shares ID tokens through `GoogleTokenStore`.
+- `GoogleDriveStorageProvider` lazily creates (or reuses) a `ClockTasks` folder and a `tasks.json` file, serializes data via `serializeData`, and saves it through the Drive v3 REST API using `fetch`.
+- A polling listener (`setInterval` every ~10 seconds) fetches the file contents and emits updates only when the serialized payload changes.
+
+### Local Storage
+- `LocalStorageBackend` and helper functions read/write a single JSON blob under the `clockTasks` key.
+- Guest mode, read-only mode, and any cloud failures fall back to local storage so the UI never loses work.
+- Sort preferences live alongside data (`sortMode` in `StoredData`) and are updated via `saveSortModePreference`.
+
 ## Testing
-
-The project uses Vitest for testing with comprehensive coverage:
-
-```bash
-# Run all tests
-npm test
-
-# Watch mode with UI
-npm test:ui
-
-# Coverage report
-npm test:coverage
-```
-
-Tests are organized by module:
-- `core/calculations.test.ts` - Time calculation logic
-- `core/taskManager.test.ts` - State operations
-- `core/storage.test.ts` - Storage backends
-- `utils/*.test.ts` - Utility functions
-
-All core logic is pure functions, making tests deterministic and fast.
-
-## Cloud Provider Integration
-
-The app supports multiple cloud providers for data sync:
-
-- Firebase: real-time sync via listeners, instant updates, hierarchical data, integrated authentication.
-- Google Drive: polling-based sync (every ~10s), data stored as `tasks.json` in Drive folder, uses Google OAuth.
-- LocalStorage: no auth; per-browser only. Used when not signed in and for immediate UI responsiveness.
-
-### Setup Requirements
-
-- Google Drive: create a `.env` file with your Google OAuth credentials:
-  ```env
-  VITE_GOOGLE_CLIENT_ID=your-client-id-here.apps.googleusercontent.com
-  ```
-- Firebase: configure your Firebase project in `src/services/firebaseConfig.ts`.
-
-### Layering Rationale and Rules
-- Core must remain free of browser APIs (e.g., `localStorage`) and cloud SDKs.
-- All provider-specific code (Firebase SDK, Google APIs, `localStorage`) must live in `src/services/providers/*`.
-- `storageCore.ts` is the only storage utility in core; providers consume it for consistent serialization/validation.
-- UI and hooks should depend on `@/core` for business logic and `@/services/providers` for provider behavior.
-
-### Migration Notes
-- `src/services/firebaseService.ts` has been deprecated in favor of `firebaseStorageProvider.ts`.
-- LocalStorage helpers moved from `core/storage.ts` to `services/providers/localStorageProvider.ts`.
+- **Vitest configuration**: see `vitest.config.ts` (React plugin, `happy-dom` environment, coverage via `@vitest/coverage-v8`).
+- **Test suites**: `src/core/calculations*.test.ts`, `src/core/taskManager.test.ts`, `src/core/storage.test.ts`, `src/core/persistence.diagnostic.test.ts`, and `src/utils/storageHelpers.test.ts` cover the deterministic core logic and persistence helpers.
+- Run `npm test` / `npm run test:ui` / `npm run test:coverage`. Each command builds the project first, so expect a short compilation step before Vitest starts.
 
 ## Technology Stack
-
-- **React 19** - UI framework
-- **TypeScript** - Type safety
-- **Vite** - Build tool and dev server
-- **Vitest** - Testing framework
-- **Google OAuth** - Authentication
-- **Google Drive API** - Cloud storage
-- **ESLint** - Linting
-- **React Compiler** - Automatic optimization
+- React 19.2 with hooks and the Babel React Compiler plugin (`babel-plugin-react-compiler`).
+- TypeScript 5.9 with strict mode, bundler module resolution, path alias `@/*`, and extra safety flags (`noUncheckedSideEffectImports`, `noUnusedLocals`, etc.).
+- Vite 5.4 (`npm start` on port 7428, `vite preview` for production bundles).
+- Vitest 4 (`happy-dom`, UI, V8 coverage) for core-unit coverage.
+- Firebase SDK 12 (Auth + Realtime Database) and Google Drive REST APIs reached via `fetch`.
+- ESLint 9 flat config with `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, and `eslint-plugin-react-refresh`.
+- Plain CSS (`App.css` + files in `src/styles/`).
 
 ## Browser Support
-
-- Modern evergreen browsers (Chrome, Firefox, Safari, Edge)
-- Requires ES2022+ JavaScript features
-- LocalStorage and Fetch API required
+- Modern evergreen browsers (Chrome, Edge, Firefox, Safari) with ES2022 features. Vite targets ES2022 in `tsconfig.app.json`.
+- Requires `localStorage`, `fetch`, and `URLSearchParams` support (all standard in current evergreen browsers).
 
 ## Contributing
+- Keep business logic in `src/core`, UI glue in hooks/components, and provider-specific code inside `src/services/providers`.
+- Use the `@/` path alias for imports and prefer TypeScript modules over relative backtracking.
+- Reuse `createLogger('ModuleName')` when adding verbose logging in core/providers.
+- Favor immutable updates; every `TaskOperations` function should return a brand-new `TaskManagerState`.
+- Co-locate new Vitest suites next to the modules they validate.
+- Run `npm run lint` and `npm test` before submitting changes; both commands are deterministic and already configured in `package.json`.
 
-The project follows these conventions:
-
-- **Imports** - Use `@/` path aliases consistently
-- **Types** - Define in `core/types.ts` or `types/index.ts`
-- **Logging** - Use `createLogger('ModuleName')` from `@/utils/logger`
-- **State** - Never mutate; always return new objects
-- **Tests** - Co-locate with source files (`*.test.ts`)
-- **Naming** - `camelCase` for files, `PascalCase` for components
-
-## Use Cases
-
-The framework-agnostic core enables multiple frontends:
-
-- ✅ **Current: React Web App** - Running at port 7428
-- 🎯 **Potential: CLI Tool** - Import core in Node.js script
-- 🎯 **Potential: Mobile App** - React Native with same core
-- 🎯 **Potential: Desktop App** - Electron wrapper
-- 🎯 **Potential: VS Code Extension** - Panel in editor
-- 🎯 **Potential: API Server** - Express.js with core logic
-
-All sharing the same battle-tested business logic.
+## Reuse Ideas
+- ✅ **React web app** - the current UI at port 7428.
+- 🟦 **Potential front-ends** - because the core is framework-agnostic, you can reuse it for a CLI, React Native app, Electron shell, VS Code panel, or even an Express API. These variants are not implemented yet, but the exports in `src/core/index.ts` make them straightforward future work.
 
 ## License
-
-Private project - All rights reserved
+Private project - All rights reserved.
 
 ## Acknowledgments
 
-Built with a focus on simplicity, clean architecture, and developer experience.
+Built with AI
