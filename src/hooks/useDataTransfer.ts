@@ -24,9 +24,15 @@ interface DataTransferHandlers {
 
 const LOG_PREFIX_FILE = '[clock-tasks][useDataTransfer]'
 
+type ActionStateBase = {
+  startedAt: Date
+  error?: unknown
+  runTime?: number
+}
+
 // Main
 export function useDataTransfer(params: DataTransferParams): DataTransferHandlers {
-  const _ = { params, startedAt: new Date() }
+  const _: { params: DataTransferParams } & ActionStateBase = { params, startedAt: new Date() }
   try {
     return {
       handleExportData: () => exportDataFlow(params.state, params.sortMode),
@@ -56,7 +62,7 @@ export function useDataTransfer(params: DataTransferParams): DataTransferHandler
 
 // Helpers
 async function exportDataFlow(state: TaskManagerState, sortMode: 'total' | 'alphabetical') {
-  const _ = { sortMode, startedAt: new Date() }
+  const _: { sortMode: 'total' | 'alphabetical' } & ActionStateBase = { sortMode, startedAt: new Date() }
   try {
     const snapshot = await getSnapshotPromise({ state, sortMode })
     await downloadPromise(snapshot, 'clock-tasks.json')
@@ -83,7 +89,7 @@ async function importDataFlow(args: {
   syncToStorage: (fileId: string | null, data: StoredData) => Promise<void>
   driveFileId: string | null
 }) {
-  const _ = { fileName: args.file.name, startedAt: new Date() }
+  const _: { fileName: string } & ActionStateBase = { fileName: args.file.name, startedAt: new Date() }
   try {
     if (args.readOnly) {
       console.debug('[importDataFlow:status]', `${LOG_PREFIX_FILE} Import blocked: read-only mode`, _)
@@ -134,7 +140,10 @@ async function importDataFlow(args: {
 }
 
 async function getStoredSnapshot(args: { state: TaskManagerState; sortMode: 'total' | 'alphabetical' }) {
-  const _ = { args, startedAt: new Date() }
+  const _: { args: { state: TaskManagerState; sortMode: 'total' | 'alphabetical' } } & ActionStateBase = {
+    args,
+    startedAt: new Date()
+  }
   try {
     const data: StoredData = {
       tasks: args.state.tasks,
@@ -160,7 +169,11 @@ async function triggerJsonDownload(
   snapshot: { data: StoredData; serialized: string },
   fileName: string
 ): Promise<void> {
-  const _ = { snapshot, fileName, startedAt: new Date() }
+  const _: { snapshot: { data: StoredData; serialized: string }; fileName: string } & ActionStateBase = {
+    snapshot,
+    fileName,
+    startedAt: new Date()
+  }
   try {
     const blob = new Blob([snapshot.serialized], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -185,7 +198,7 @@ async function triggerJsonDownload(
 }
 
 async function parseStoredData(raw: string): Promise<StoredData> {
-  const _ = { rawLength: raw.length, startedAt: new Date() }
+  const _: { rawLength: number } & ActionStateBase = { rawLength: raw.length, startedAt: new Date() }
   try {
     const data = validateData(deserializeData(raw))
     return data
@@ -203,7 +216,7 @@ async function parseStoredData(raw: string): Promise<StoredData> {
 }
 
 async function readFileAsText(file: File): Promise<string> {
-  const _ = { fileName: file.name, startedAt: new Date() }
+  const _: { fileName: string } & ActionStateBase = { fileName: file.name, startedAt: new Date() }
   try {
     const content = await file.text()
     return content

@@ -37,7 +37,14 @@ const LOG_PREFIX_FILE = '[clock-tasks][Controls]'
 
 export function Controls(props: ControlsProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const _ = { props, startedAt: new Date() }
+  // Common action state shape for logging and timing
+  type ActionStateBase = {
+    startedAt: Date
+    error?: unknown
+    runTime?: number
+  }
+
+  const _: { props: ControlsProps } & ActionStateBase = { props, startedAt: new Date() }
   try {
     const {
       sortMode,
@@ -54,7 +61,7 @@ export function Controls(props: ControlsProps) {
     } = props
 
     const handleDeleteAllClick = () => {
-      const actionState = { deletionMode, startedAt: new Date() }
+      const actionState: { deletionMode: boolean } & ActionStateBase = { deletionMode, startedAt: new Date() }
       try {
         if (deletionMode) {
           onDeleteAll()
@@ -75,7 +82,7 @@ export function Controls(props: ControlsProps) {
     }
 
     const handleExportClick = async () => {
-      const actionState = { startedAt: new Date() }
+      const actionState: ActionStateBase = { startedAt: new Date() }
       try {
         await onExportData()
       } catch (error) {
@@ -92,7 +99,7 @@ export function Controls(props: ControlsProps) {
     }
 
     const handleImportButtonClick = async () => {
-      const actionState = { readOnly, startedAt: new Date() }
+      const actionState: { readOnly: boolean } & ActionStateBase = { readOnly, startedAt: new Date() }
       try {
         if (readOnly) {
           console.debug('[Controls:handleImportButtonClick:status]', `${LOG_PREFIX_FILE} Import blocked: read-only`, actionState)
@@ -138,7 +145,7 @@ export function Controls(props: ControlsProps) {
     }
 
     const handleFileInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
-      const actionState = { startedAt: new Date() }
+      const actionState: ActionStateBase = { startedAt: new Date() }
       const input = event.target
       try {
         const selectedFile = input.files?.[0]
