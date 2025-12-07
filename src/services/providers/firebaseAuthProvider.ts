@@ -43,12 +43,20 @@ export class FirebaseAuthProvider implements AuthProvider {
   }
 
   onAuthStateChange(callback: (user: User | null) => void): () => void {
+    let lastUserId: string | null = null
     return onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         const user = this.convertFirebaseUserToUser(firebaseUser)
-        callback(user)
+        // Dedupe identical auth callbacks for the same user id
+        if (lastUserId !== user.id) {
+          lastUserId = user.id
+          callback(user)
+        }
       } else {
-        callback(null)
+        if (lastUserId !== null) {
+          lastUserId = null
+          callback(null)
+        }
       }
     })
   }

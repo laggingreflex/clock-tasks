@@ -16,34 +16,50 @@ export const useSyncEffect = (
   setLastSyncTime: (time: number) => void
 ) => {
   const isInitializedRef = useRef(false)
+  const lastLoadedRef = useRef<number | null>(null)
+  const lastUserIdRef = useRef<string | null>(null)
   // Memoize storage provider to prevent re-creation and effect churn
   const storageProvider = useMemo(() => getStorageProvider(), [])
   const { readOnly } = useAppOptions()
 
   // Initialize storage provider on user login
   useEffect(() => {
-    if (user && !user.isGuest) {
+    const userId = user?.id ?? null
+    const isGuest = !!user?.isGuest
+
+    // Avoid re-initializing for identical user id
+    const userChanged = lastUserIdRef.current !== userId
+    lastUserIdRef.current = userId
+
+    if (userId && !isGuest) {
       // Log only once per login session
-      if (!isInitializedRef.current) {
-        log.log(`🔐 User logged in: ${user.name}`)
+      if (!isInitializedRef.current && userChanged) {
+        log.log(`🔐 User logged in: ${user!.name}`)
       }
-      storageProvider.setUserId(user.id)
+      storageProvider.setUserId(userId)
+      // Initialize only if not already initialized
       initializeStorage()
-    } else if (user?.isGuest) {
-      log.log('👤 Guest mode - using localStorage only')
+    } else if (isGuest) {
+      if (!isInitializedRef.current) {
+        log.log('👤 Guest mode - using localStorage only')
+      }
       storageProvider.clearUser()
       isInitializedRef.current = false
+      lastLoadedRef.current = null
     } else {
-      log.log('🔓 User logged out')
+      if (!isInitializedRef.current) {
+        log.log('🔓 User logged out')
+      }
       storageProvider.clearUser()
       isInitializedRef.current = false
+      lastLoadedRef.current = null
     }
 
     return () => {
       // Cleanup listener on unmount or user change
       storageProvider.stopListening()
     }
-  }, [user])
+  }, [user?.id, user?.isGuest])
 
   const initializeStorage = async () => {
     if (!user || user.isGuest || isInitializedRef.current) return
@@ -55,7 +71,12 @@ export const useSyncEffect = (
       const cloudData = await storageProvider.load()
 
       // Cloud storage is authoritative source - override localStorage
-      log.log(`☁️ CLOUD OVERRIDE: Loading ${cloudData.tasks?.length || 0} tasks, ${cloudData.history?.length || 0} clicks`)
+      const loadedAt = cloudData.lastModified || Date.now()
+      // Dedupe identical loads
+      if (lastLoadedRef.current !== loadedAt) {
+        log.log(`☁️ CLOUD OVERRIDE: Loading ${cloudData.tasks?.length || 0} tasks, ${cloudData.history?.length || 0} clicks`)
+        lastLoadedRef.current = loadedAt
+      }
 
       setState({
         tasks: cloudData.tasks || [],

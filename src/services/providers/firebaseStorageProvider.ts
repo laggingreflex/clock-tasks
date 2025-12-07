@@ -17,6 +17,7 @@ type DataCallback = (data: StoredData) => void
 export class FirebaseStorageProvider implements StorageProvider {
   private currentUserId: string | null = null
   private unsubscribe: (() => void) | null = null
+  private lastEmittedTimestamp: number | null = null
 
   setUserId(userId: string): void {
     if (this.currentUserId !== userId) {
@@ -122,9 +123,10 @@ export class FirebaseStorageProvider implements StorageProvider {
         log.warn('Cannot start listening: no user ID set')
         return
       }
-
-      // Stop any existing listener
-      this.stopListening()
+      // If already listening, do not reattach
+      if (this.unsubscribe) {
+        return
+      }
 
       const path = this.getUserTasksPath()
       const tasksRef = ref(database, path)
@@ -149,8 +151,14 @@ export class FirebaseStorageProvider implements StorageProvider {
               return
             }
 
-            log.log(`📡 Firebase update: ${data.tasks.length} tasks, ${data.history.length} clicks`)
-            callback(data)
+            // Dedupe identical payloads by lastModified timestamp
+            if (this.lastEmittedTimestamp !== data.lastModified) {
+              this.lastEmittedTimestamp = data.lastModified
+              log.log(`📡 Firebase update: ${data.tasks.length} tasks, ${data.history.length} clicks`)
+              callback(data)
+            } else {
+              log.debug('📡 Firebase update deduped (no change)')
+            }
           } catch (error) {
             log.error('Error processing Firebase update:', error)
           }
@@ -173,17 +181,20 @@ export class FirebaseStorageProvider implements StorageProvider {
   }
 
   stopListening(): void {
-    if (this.unsubscribe) {
-      log.log('🔇 Stopping Firebase listener')
-      this.unsubscribe()
-      this.unsubscribe = null
+    if (!this.unsubscribe) {
+      return
     }
+    log.log('🔇 Stopping Firebase listener')
+    this.unsubscribe()
+    this.unsubscribe = null
+    this.lastEmittedTimestamp = null
   }
 
   clearUser(): void {
     log.log('🔓 Clearing user')
     this.stopListening()
     this.currentUserId = null
+    this.lastEmittedTimestamp = null
   }
 
   isListening(): boolean {
