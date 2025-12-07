@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { LocalStorageBackend, InMemoryBackend, loadFromLocalStorage, saveToLocalStorage, clearLocalStorage } from './storage';
+import { InMemoryBackend } from './storage';
+import { LocalStorageBackend, loadFromLocalStorage, saveToLocalStorage, clearLocalStorage } from '@/services/providers/localStorageProvider';
 import type { StoredData } from './types';
 
 describe('LocalStorageBackend', () => {

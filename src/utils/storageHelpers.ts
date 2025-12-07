@@ -1,3 +1,3 @@
-// Storage functions have been moved to core/storage.ts
-// Re-export them here for backward compatibility
-export { loadFromLocalStorage, saveToLocalStorage, clearLocalStorage } from '@/core'
+// Storage functions are provided by the localStorage provider layer
+// Re-export them here for backward compatibility and a stable import path
+export { loadFromLocalStorage, saveToLocalStorage, clearLocalStorage } from '@/services/providers/localStorageProvider'

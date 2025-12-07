@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { loadSortModePreference } from '@/core/storage'
+import { loadSortModePreference } from '@/services/providers/localStorageProvider'
 
 export const useUIState = () => {
   const [deletionMode, setDeletionMode] = useState(false)

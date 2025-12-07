@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import './App.css'
 import { formatTime, TaskQueries } from './core'
-import { saveSortModePreference } from './core/storage'
+import { saveSortModePreference } from './services/providers/localStorageProvider'
 import { useAppOptions } from './hooks/OptionsContext'
 import { getAuthProvider, logProviderConfiguration } from './services/providers'
 import { useClickOutside, useDocumentTitle, useScrollToNewTask, useCurrentTime, useTaskState, useUIState, useSyncEffect, useTaskHandlers, useSortedTasks } from './hooks'

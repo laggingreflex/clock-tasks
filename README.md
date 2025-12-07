@@ -56,7 +56,8 @@ clock-tasks/
 │   │   ├── types.ts       # Data structures and interfaces
 │   │   ├── calculations.ts # Pure time calculation functions
 │   │   ├── taskManager.ts  # State operations and queries
-│   │   ├── storage.ts      # Storage abstraction layer
+│   │   ├── storageCore.ts  # Serialization/validation utilities (provider-agnostic)
+│   │   ├── storage.ts      # In-memory backend (tests) and core-only abstractions
 │   │   ├── timeFormatter.ts # Time formatting utilities
 │   │   └── index.ts        # Public API
 │   │
@@ -76,15 +77,16 @@ clock-tasks/
 │   │   └── useSortedTasks.ts
 │   │
 │   ├── services/          # External service integrations
-│   │   ├── providers/     # Auth + storage provider adapters and factory
+│   │   ├── providers/     # Auth + storage provider adapters and factory (browser/cloud specific)
 │   │   │   ├── providerConfig.ts
 │   │   │   ├── firebaseAuthProvider.ts
 │   │   │   ├── firebaseStorageProvider.ts
+│   │   │   ├── localStorageProvider.ts
 │   │   │   ├── googleAuthProvider.ts
 │   │   │   ├── googleDriveStorageProvider.ts
 │   │   │   └── types.ts
 │   │   ├── firebaseConfig.ts
-│   │   └── firebaseService.ts
+│   │   └── (deprecated) firebaseService.ts
 │   │
 │   ├── utils/             # Application utilities
 │   │   ├── authHelpers.ts
@@ -102,9 +104,15 @@ clock-tasks/
 └── vitest.config.ts       # Test configuration
 ```
 
-## Provider Adapter Architecture & Guidelines
+## Three-Layer Architecture & Provider Guidelines
 
-This app uses an adapter-style provider paradigm for authentication and storage. Providers can be swapped without touching app logic.
+This app enforces a strict 3-layer separation:
+
+1. Core (src/core): pure business logic, types, calculations, task state operations, and provider-agnostic storage utilities in `storageCore.ts`. No browser/cloud/auth imports.
+2. Storage Abstractions: interfaces and in-memory backend in `core/storage.ts` — useful for tests and non-browser environments.
+3. Providers (src/services/providers): browser/cloud-specific implementations for auth and storage (Firebase, Google Drive, LocalStorage), plus the provider factory. These may use browser APIs and SDKs.
+
+Providers use an adapter-style pattern; they can be swapped without touching app logic.
 
 - Interface-driven: all storage providers implement the same `StorageProvider` interface (save, load, startListening, stopListening, clear, setUserId)
 - Encapsulated behavior: polling intervals or real-time listeners live inside each provider
@@ -115,6 +123,7 @@ This app uses an adapter-style provider paradigm for authentication and storage.
 ### Current Providers
 - Firebase: real-time push via Realtime Database, hierarchical path `users/{userId}/tasks`, instant cross-tab updates, server-side conflict handling
 - Google Drive: polling every ~10s via REST API, stores a single `tasks.json` file in a `ClockTasks` folder, quota-sensitive, consistent interface
+ - LocalStorage: simple browser-local persistence; used for guest mode and instant UI seeding. See `services/providers/localStorageProvider.ts`.
 
 ### Adding New Providers (e.g., Supabase)
 1. Implement the `StorageProvider` interface
@@ -189,7 +198,11 @@ TaskQueries.taskExists(taskId, state)         // Check existence
 ### Storage Backends
 
 ```typescript
-import { LocalStorageBackend, InMemoryBackend } from '@/core'
+// Core provides only InMemoryBackend (for tests and non-browser runs)
+import { InMemoryBackend } from '@/core'
+
+// LocalStorage backend lives in providers (browser-specific)
+import { LocalStorageBackend } from '@/services/providers'
 
 // Use localStorage
 const storage = new LocalStorageBackend()
@@ -273,6 +286,7 @@ The app supports multiple cloud providers for data sync:
 
 - Firebase: real-time sync via listeners, instant updates, hierarchical data, integrated authentication.
 - Google Drive: polling-based sync (every ~10s), data stored as `tasks.json` in Drive folder, uses Google OAuth.
+- LocalStorage: no auth; per-browser only. Used when not signed in and for immediate UI responsiveness.
 
 ### Setup Requirements
 
@@ -281,6 +295,16 @@ The app supports multiple cloud providers for data sync:
   VITE_GOOGLE_CLIENT_ID=your-client-id-here.apps.googleusercontent.com
   ```
 - Firebase: configure your Firebase project in `src/services/firebaseConfig.ts`.
+
+### Layering Rationale and Rules
+- Core must remain free of browser APIs (e.g., `localStorage`) and cloud SDKs.
+- All provider-specific code (Firebase SDK, Google APIs, `localStorage`) must live in `src/services/providers/*`.
+- `storageCore.ts` is the only storage utility in core; providers consume it for consistent serialization/validation.
+- UI and hooks should depend on `@/core` for business logic and `@/services/providers` for provider behavior.
+
+### Migration Notes
+- `src/services/firebaseService.ts` has been deprecated in favor of `firebaseStorageProvider.ts`.
+- LocalStorage helpers moved from `core/storage.ts` to `services/providers/localStorageProvider.ts`.
 
 ## Technology Stack
 

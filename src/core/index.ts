@@ -27,7 +27,9 @@ export {
 } from './calculations'
 
 // Storage backends and helpers
-export { LocalStorageBackend, InMemoryBackend, loadFromLocalStorage, saveToLocalStorage, clearLocalStorage } from './storage'
+// Note: Browser-specific LocalStorage backend and helpers live in services/providers.
+// Core only exposes the in-memory backend for tests and provider-agnostic types/utilities.
+export { InMemoryBackend } from './storage'
 
 // Task operations and queries
 export { TaskOperations, TaskQueries } from './taskManager'

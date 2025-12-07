@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react'
 import { getStorageProvider } from '@/services/providers'
 import { createLogger } from '@/utils/logger'
-import { saveToLocalStorage } from '@/core'
+import { saveToLocalStorage } from '@/services/providers/localStorageProvider'
 import type { User } from '@/types'
 import type { StoredData } from '@/core'
 import type { TaskManagerState } from '@/core'

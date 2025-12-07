@@ -1,3 +1,5 @@
+// DEPRECATED: Use services/providers/firebaseStorageProvider.ts instead.
+// This legacy singleton is retained for reference and will be removed in a future cleanup.
 // Firebase Realtime Database service for storing and syncing tasks
 import { ref, set, onValue, off, get } from 'firebase/database'
 import { database } from './firebaseConfig'
