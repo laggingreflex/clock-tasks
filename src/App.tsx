@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import { formatTime, TaskQueries } from './core'
 import { saveSortModePreference } from './core/storage'
+import { useAppOptions } from './hooks/OptionsContext'
 import { getAuthProvider, logProviderConfiguration } from './services/providers'
 import { useClickOutside, useDocumentTitle, useScrollToNewTask, useCurrentTime, useTaskState, useUIState, useSyncEffect, useTaskHandlers, useSortedTasks } from './hooks'
 import { LoginComponent } from './components/LoginComponent'
@@ -12,6 +13,7 @@ import { Controls } from './components/Controls'
 import type { User } from './types'
 
 function App() {
+  const { readOnly } = useAppOptions()
   const authProvider = getAuthProvider()
 
   const [user, setUser] = useState<User | null>(() => authProvider.loadUser())
@@ -42,8 +44,10 @@ function App() {
 
   // Save sort mode preference whenever it changes
   useEffect(() => {
-    saveSortModePreference(ui.sortMode)
-  }, [ui.sortMode])
+    if (!readOnly) {
+      saveSortModePreference(ui.sortMode)
+    }
+  }, [ui.sortMode, readOnly])
 
   useCurrentTime(ui.setNow)
   useDocumentTitle(`Tasks Clock: ${formatTime(TaskQueries.getTotalElapsedTime(state, ui.now))}`)
@@ -102,11 +106,22 @@ function App() {
           <Controls
             sortMode={ui.sortMode}
             deletionMode={ui.deletionMode}
+            readOnly={readOnly}
             onStopAll={handlers.handleStopAll}
             onResetAll={handlers.handleResetAll}
-            onToggleSort={() => ui.setSortMode(prev => prev === 'total' ? 'alphabetical' : 'total')}
-            onToggleDeletion={() => ui.setDeletionMode(!ui.deletionMode)}
+            onToggleSort={() => readOnly ? null : ui.setSortMode(prev => prev === 'total' ? 'alphabetical' : 'total')}
+            onToggleDeletion={() => readOnly ? null : ui.setDeletionMode(!ui.deletionMode)}
             onDeleteAll={handlers.handleDeleteAllTasks}
+            onToggleReadOnly={() => {
+              const url = new URL(window.location.href)
+              if (readOnly) {
+                url.searchParams.delete('readonly')
+              } else {
+                // presence is enough, set to empty
+                url.searchParams.set('readonly', '')
+              }
+              window.location.href = url.toString()
+            }}
           />
         </>
       )}

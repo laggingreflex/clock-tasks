@@ -1,6 +1,7 @@
 import { TaskOperations, TaskQueries } from '@/core'
 import type { TaskManagerState, StoredData } from '@/core'
 import { createLogger } from '@/utils/logger'
+import { useAppOptions } from './OptionsContext'
 
 const log = createLogger('useTaskHandlers')
 
@@ -12,6 +13,8 @@ export const useTaskHandlers = (
   setDeletionMode: (mode: boolean) => void,
   setLastAddedTaskId: (id: string | null) => void
 ) => {
+  // Read global options
+  const { readOnly } = useAppOptions()
   const updateAndSync = (newState: TaskManagerState) => {
     log.debug('updateAndSync: updating state and syncing to drive')
     setState(newState)
@@ -25,6 +28,10 @@ export const useTaskHandlers = (
   }
 
   const handleAddTask = (name: string) => {
+    if (readOnly) {
+      log.debug('Read-only mode: ignoring add task')
+      return
+    }
     log.log(`👤 User action: Add task "${name}"`)
     const newState = TaskOperations.addAndStartTask(name, state)
     updateAndSync(newState)
@@ -32,6 +39,10 @@ export const useTaskHandlers = (
   }
 
   const handleStartTask = (id: string) => {
+    if (readOnly) {
+      log.debug('Read-only mode: ignoring start task')
+      return
+    }
     const taskName = state.tasks.find(t => t.id === id)?.name || 'unknown'
     const currentRunningId = TaskQueries.getCurrentRunningTaskId(state)
 
@@ -46,11 +57,19 @@ export const useTaskHandlers = (
   }
 
   const handleUpdateTaskName = (id: string, name: string) => {
+    if (readOnly) {
+      log.debug('Read-only mode: ignoring update task name')
+      return
+    }
     log.log(`👤 User action: Rename task to "${name}"`)
     updateAndSync(TaskOperations.updateTaskName(id, name, state))
   }
 
   const handleDeleteTask = (id: string) => {
+    if (readOnly) {
+      log.debug('Read-only mode: ignoring delete task')
+      return
+    }
     const taskName = state.tasks.find(t => t.id === id)?.name || 'unknown'
     log.log(`👤 User action: Delete task "${taskName}" - awaiting confirmation`)
     if (window.confirm('Delete this task?')) {
@@ -62,6 +81,10 @@ export const useTaskHandlers = (
   }
 
   const handleDeleteAllTasks = () => {
+    if (readOnly) {
+      log.debug('Read-only mode: ignoring delete all tasks')
+      return
+    }
     log.log('👤 User action: Delete all tasks - awaiting confirmation')
     if (window.confirm('Delete all tasks?')) {
       log.log('✓ Delete all confirmed')
@@ -73,11 +96,19 @@ export const useTaskHandlers = (
   }
 
   const handleResetAll = () => {
+    if (readOnly) {
+      log.debug('Read-only mode: ignoring reset all')
+      return
+    }
     log.log('👤 User action: Reset all timers')
     updateAndSync(TaskOperations.resetAllTasks(state))
   }
 
   const handleStopAll = () => {
+    if (readOnly) {
+      log.debug('Read-only mode: ignoring stop all')
+      return
+    }
     log.log('👤 User action: Stop all tasks')
     updateAndSync(TaskOperations.stopAllTasks(state))
   }

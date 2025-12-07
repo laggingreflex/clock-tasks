@@ -5,6 +5,7 @@ import { saveToLocalStorage } from '@/core'
 import type { User } from '@/types'
 import type { StoredData } from '@/core'
 import type { TaskManagerState } from '@/core'
+import { useAppOptions } from './OptionsContext'
 
 const log = createLogger('useSyncEffect')
 
@@ -16,6 +17,7 @@ export const useSyncEffect = (
 ) => {
   const isInitializedRef = useRef(false)
   const storageProvider = getStorageProvider()
+  const { readOnly } = useAppOptions()
 
   // Initialize storage provider on user login
   useEffect(() => {
@@ -87,6 +89,10 @@ export const useSyncEffect = (
   // Sync to cloud storage (Firebase, Google Drive, etc.)
   const syncToCloud = async (fileId: string | null, dataToSync: StoredData) => {
     try {
+      if (readOnly) {
+        log.debug('Read-only mode: skipping persistence (cloud/local)')
+        return
+      }
       if (fileId === 'cloud' && user && !user.isGuest) {
         log.debug(`🔄 Syncing to cloud storage: ${dataToSync.tasks.length} tasks, ${dataToSync.history.length} clicks`)
 
@@ -110,7 +116,7 @@ export const useSyncEffect = (
       log.error('Failed to sync to cloud storage:', error)
       log.log('📱 Falling back to local storage only')
       // Always fallback to localStorage so we don't lose data
-      saveToLocalStorage(dataToSync)
+      if (!readOnly) saveToLocalStorage(dataToSync)
     }
   }
 
