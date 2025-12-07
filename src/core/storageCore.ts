@@ -1,8 +1,8 @@
 // Unified core storage logic for ClockTasks
 import type { StoredData } from './types'
-import { createLogger } from '@/utils/logger'
+// Removed custom logger; use console.* with explicit prefixes
 
-const log = createLogger('StorageCore')
+const LOG_PREFIX_FILE = '[clock-tasks][StorageCore]'
 
 export const STORAGE_KEY = 'clockTasks'
 
@@ -12,8 +12,9 @@ export function serializeData(data: StoredData): string {
 }
 
 export function deserializeData(raw: string | null): StoredData {
+  const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:deserializeData`
   if (!raw) {
-    log.debug('No data found, returning empty state')
+    console.debug(LOG_PREFIX_FN, 'No data found, returning empty state')
     return { tasks: [], history: [], lastModified: Date.now(), sortMode: 'total' }
   }
   try {
@@ -25,7 +26,7 @@ export function deserializeData(raw: string | null): StoredData {
       sortMode: data.sortMode || 'total'
     }
   } catch (error) {
-    log.error('Failed to parse data:', error)
+    console.error(LOG_PREFIX_FN, 'Failed to parse data:', error)
     return { tasks: [], history: [], lastModified: Date.now(), sortMode: 'total' }
   }
 }

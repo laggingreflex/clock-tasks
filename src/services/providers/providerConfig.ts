@@ -5,14 +5,14 @@
  * Alternative: Google (auth + Google Drive storage)
  */
 
-import { createLogger } from '@/utils/logger'
+// Removed custom logger; use console.* with explicit prefixes
 import type { AuthProvider, StorageProvider, TokenStore } from './types'
 import { FirebaseAuthProvider } from './firebaseAuthProvider'
 import { FirebaseStorageProvider } from './firebaseStorageProvider'
 import { GoogleAuthProvider } from './googleAuthProvider'
 import { GoogleDriveStorageProvider } from './googleDriveStorageProvider'
 
-const log = createLogger('ProviderConfig')
+const LOG_PREFIX_FILE = '[clock-tasks][ProviderConfig]'
 
 /**
  * Provider name type - determines which auth/storage backend to use
@@ -46,11 +46,12 @@ export function getCurrentProviderName(): ProviderName {
  * Set the provider (persists to localStorage)
  */
 export function setCurrentProvider(provider: ProviderName): void {
+  const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:setCurrentProvider`
   if (!['firebase', 'google'].includes(provider)) {
     throw new Error(`Invalid provider: ${provider}. Must be 'firebase' or 'google'`)
   }
   localStorage.setItem('authProvider', provider)
-  log.log(`🔧 Provider switched to: ${provider}`)
+  console.log(LOG_PREFIX_FN, `🔧 Provider switched to: ${provider}`)
 }
 
 /**
@@ -98,7 +99,7 @@ export function getAuthProvider(): AuthProvider {
     return cache[provider]
   }
 
-  log.debug(`Creating AuthProvider: ${provider}`)
+  console.debug(`${LOG_PREFIX_FILE}:getAuthProvider`, `Creating AuthProvider: ${provider}`)
 
   switch (provider) {
     case 'firebase':
@@ -132,7 +133,7 @@ export function getStorageProvider(): StorageProvider {
     return cache[provider]
   }
 
-  log.debug(`Creating StorageProvider: ${provider}`)
+  console.debug(`${LOG_PREFIX_FILE}:getStorageProvider`, `Creating StorageProvider: ${provider}`)
 
   switch (provider) {
     case 'firebase':
@@ -156,5 +157,5 @@ export function getStorageProvider(): StorageProvider {
  */
 export function logProviderConfiguration(): void {
   const provider = getCurrentProviderName()
-  log.log(`📋 Using ${provider === 'firebase' ? '🔥 Firebase' : '🔵 Google'} provider`)
+  console.log(`${LOG_PREFIX_FILE}:logProviderConfiguration`, `📋 Using ${provider === 'firebase' ? '🔥 Firebase' : '🔵 Google'} provider`)
 }

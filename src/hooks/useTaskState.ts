@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { loadFromLocalStorage } from '@/utils/storageHelpers'
 import type { TaskManagerState } from '@/core'
-import { createLogger } from '@/utils/logger'
 
-const log = createLogger('useTaskState')
+// Removed custom logger; use console.* with explicit prefixes
+const LOG_PREFIX_FILE = '[clock-tasks][useTaskState]'
 
 export const useTaskState = () => {
+  const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:useTaskState`
   const { tasks: initialTasks, history: initialhistory } = loadFromLocalStorage()
   const hasLoggedInit = useRef(false)
 
@@ -19,7 +20,7 @@ export const useTaskState = () => {
 
   useEffect(() => {
     if (!hasLoggedInit.current) {
-      log.log(`📱 useTaskState initialized from localStorage: ${initialTasks.length} tasks (provisional, awaiting Firebase)`)
+      console.log(LOG_PREFIX_FN, `📱 useTaskState initialized from localStorage: ${initialTasks.length} tasks (provisional, awaiting Firebase)`)
       hasLoggedInit.current = true
     }
   }, [])

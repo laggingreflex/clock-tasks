@@ -5,9 +5,8 @@
 
 import type { TaskData, ClickEvent, StoredData, Task } from './types'
 import { calculateTaskStats, getCurrentRunningTaskId as getRunningTaskId, convertTaskDataList } from './calculations'
-import { createLogger } from '@/utils/logger'
-
-const log = createLogger('TaskManager')
+// Removed custom logger; use console.* with explicit prefixes
+const LOG_PREFIX_FILE = '[clock-tasks][TaskManager]'
 
 export interface TaskManagerState {
   tasks: TaskData[]
@@ -33,7 +32,7 @@ export const TaskOperations = {
     getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
     if (!name.trim()) {
-      log.debug('addTask rejected: empty name')
+      console.debug(`${LOG_PREFIX_FILE}:addTask`, 'addTask rejected: empty name')
       return currentState
     }
 
@@ -44,8 +43,8 @@ export const TaskOperations = {
       name: name.trim()
     }
 
-    log.log(`✚ Add task: "${name}" (id: ${id})`)
-    log.debug('addTask state before:', currentState.tasks.length, 'tasks')
+    console.log(`${LOG_PREFIX_FILE}:addTask`, `✚ Add task: "${name}" (id: ${id})`)
+    console.debug(`${LOG_PREFIX_FILE}:addTask`, 'addTask state before:', currentState.tasks.length, 'tasks')
 
     return {
       ...currentState,
@@ -62,8 +61,9 @@ export const TaskOperations = {
     currentState: TaskManagerState,
     getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:addAndStartTask`
     if (!name.trim()) {
-      log.debug('addAndStartTask rejected: empty name')
+      console.debug(LOG_PREFIX_FN, 'addAndStartTask rejected: empty name')
       return currentState
     }
 
@@ -75,8 +75,8 @@ export const TaskOperations = {
       name: name.trim()
     }
 
-    log.log(`✚ Add & start task: "${name}" (id: ${id}) at ${timestamp}ms`)
-    log.debug('addAndStartTask - current running:', getRunningTaskId(currentState.history))
+    console.log(LOG_PREFIX_FN, `✚ Add & start task: "${name}" (id: ${id}) at ${timestamp}ms`)
+    console.debug(LOG_PREFIX_FN, 'addAndStartTask - current running:', getRunningTaskId(currentState.history))
 
     return {
       ...currentState,
@@ -94,14 +94,15 @@ export const TaskOperations = {
     currentState: TaskManagerState,
     getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:startTask`
     const timestamp = getTimestamp()
     const taskName = currentState.tasks.find(t => t.id === id)?.name || 'unknown'
     const wasPreviouslyRunning = getRunningTaskId(currentState.history)
 
-    log.log(`▶ Start task: "${taskName}" (id: ${id}) at ${timestamp}ms`)
+    console.log(LOG_PREFIX_FN, `▶ Start task: "${taskName}" (id: ${id}) at ${timestamp}ms`)
     if (wasPreviouslyRunning !== id) {
       const prevName = currentState.tasks.find(t => t.id === wasPreviouslyRunning)?.name || 'none'
-      log.debug(`startTask - switching from "${prevName}" to "${taskName}"`)
+      console.debug(LOG_PREFIX_FN, `startTask - switching from "${prevName}" to "${taskName}"`)
     }
 
     return {
@@ -120,8 +121,9 @@ export const TaskOperations = {
     currentState: TaskManagerState,
     getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:updateTaskName`
     const oldName = currentState.tasks.find(t => t.id === id)?.name || 'unknown'
-    log.log(`✏ Rename task: "${oldName}" → "${name}" (id: ${id})`)
+    console.log(LOG_PREFIX_FN, `✏ Rename task: "${oldName}" → "${name}" (id: ${id})`)
 
     return {
       ...currentState,
@@ -138,10 +140,11 @@ export const TaskOperations = {
     currentState: TaskManagerState,
     getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:deleteTask`
     const taskName = currentState.tasks.find(t => t.id === id)?.name || 'unknown'
     const clicksRemoved = currentState.history.filter(e => e.taskId === id).length
 
-    log.log(`🗑 Delete task: "${taskName}" (id: ${id}) - removed ${clicksRemoved} click events`)
+    console.log(LOG_PREFIX_FN, `🗑 Delete task: "${taskName}" (id: ${id}) - removed ${clicksRemoved} click events`)
 
     return {
       ...currentState,
@@ -158,7 +161,8 @@ export const TaskOperations = {
     _currentState: TaskManagerState,
     getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
-    log.log(`🗑 Delete all tasks - clearing entire state`)
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:deleteAllTasks`
+    console.log(LOG_PREFIX_FN, `🗑 Delete all tasks - clearing entire state`)
     return {
       tasks: [],
       history: [],
@@ -173,9 +177,10 @@ export const TaskOperations = {
     currentState: TaskManagerState,
     getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:resetAllTasks`
     const tasksCount = currentState.tasks.length
     const clicksCount = currentState.history.length
-    log.log(`⟲ Reset all timers - clearing ${clicksCount} click events for ${tasksCount} tasks`)
+    console.log(LOG_PREFIX_FN, `⟲ Reset all timers - clearing ${clicksCount} click events for ${tasksCount} tasks`)
 
     return {
       ...currentState,
@@ -192,14 +197,15 @@ export const TaskOperations = {
     currentState: TaskManagerState,
     getTimestamp: () => number = () => Date.now()
   ): TaskManagerState {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:stopAllTasks`
     if (currentState.history.length === 0) {
-      log.debug('stopAllTasks: no tasks running')
+      console.debug(LOG_PREFIX_FN, 'stopAllTasks: no tasks running')
       return currentState
     }
 
     const runningTaskId = getRunningTaskId(currentState.history)
     const taskName = currentState.tasks.find(t => t.id === runningTaskId)?.name || 'unknown'
-    log.log(`⏹ Stop all tasks (was running: "${taskName}")`)
+    console.log(LOG_PREFIX_FN, `⏹ Stop all tasks (was running: "${taskName}")`)
 
     // Add a click for a non-existent task ID to stop everything
     // This preserves all history and last session calculations
@@ -222,8 +228,9 @@ export const TaskQueries = {
     state: TaskManagerState,
     now: number
   ): Task[] {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:getAllTasks`
     const tasks = convertTaskDataList(state.tasks, state.history, now)
-    log.debug(`getAllTasks: ${tasks.length} tasks, running: ${tasks.filter(t => t.isRunning).map(t => t.name).join(', ') || 'none'}`)
+    console.debug(LOG_PREFIX_FN, `getAllTasks: ${tasks.length} tasks, running: ${tasks.filter(t => t.isRunning).map(t => t.name).join(', ') || 'none'}`)
     return tasks
   },
 
@@ -235,9 +242,10 @@ export const TaskQueries = {
     state: TaskManagerState,
     now: number
   ): Task | undefined {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:getTask`
     const taskData = state.tasks.find(t => t.id === id)
     if (!taskData) {
-      log.debug(`getTask: task not found (id: ${id})`)
+      console.debug(LOG_PREFIX_FN, `getTask: task not found (id: ${id})`)
       return undefined
     }
 
@@ -253,7 +261,7 @@ export const TaskQueries = {
       totalTime: stats.totalTime
     }
 
-    log.debug(`getTask: "${taskData.name}" - running: ${isRunning}, total: ${stats.totalTime}s`)
+    console.debug(LOG_PREFIX_FN, `getTask: "${taskData.name}" - running: ${isRunning}, total: ${stats.totalTime}s`)
     return task
   },
 
@@ -261,9 +269,10 @@ export const TaskQueries = {
    * Get currently running task ID
    */
   getCurrentRunningTaskId(state: TaskManagerState): string | undefined {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:getCurrentRunningTaskId`
     const id = getRunningTaskId(state.history)
     const taskName = id ? state.tasks.find(t => t.id === id)?.name : 'none'
-    log.debug(`getCurrentRunningTaskId: "${taskName}" (id: ${id})`)
+    console.debug(LOG_PREFIX_FN, `getCurrentRunningTaskId: "${taskName}" (id: ${id})`)
     return id
   },
 
@@ -274,9 +283,10 @@ export const TaskQueries = {
     state: TaskManagerState,
     now: number
   ): number {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:getTotalElapsedTime`
     const tasks = this.getAllTasks(state, now)
     const total = tasks.reduce((sum, t) => sum + t.totalTime, 0)
-    log.debug(`getTotalElapsedTime: ${total}s across ${tasks.length} tasks`)
+    console.debug(LOG_PREFIX_FN, `getTotalElapsedTime: ${total}s across ${tasks.length} tasks`)
     return total
   },
 
@@ -284,8 +294,9 @@ export const TaskQueries = {
    * Check if task exists
    */
   taskExists(id: string, state: TaskManagerState): boolean {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:taskExists`
     const exists = state.tasks.some(t => t.id === id)
-    log.debug(`taskExists: id ${id} - ${exists ? 'found' : 'not found'}`)
+    console.debug(LOG_PREFIX_FN, `taskExists: id ${id} - ${exists ? 'found' : 'not found'}`)
     return exists
   }
 }

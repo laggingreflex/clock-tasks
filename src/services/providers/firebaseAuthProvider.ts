@@ -6,38 +6,40 @@
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth'
 import { auth } from '@/services/firebaseConfig'
 import type { User } from '@/types'
-import { createLogger } from '@/utils/logger'
+// Removed custom logger; use console.* with explicit prefixes
 import type { AuthProvider } from './types'
 
-const log = createLogger('FirebaseAuthProvider')
+const LOG_PREFIX_FILE = '[clock-tasks][FirebaseAuthProvider]'
 
 export class FirebaseAuthProvider implements AuthProvider {
   async signIn(): Promise<User> {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:signIn`
     try {
       const provider = new GoogleAuthProvider()
       // Request Drive scope for future compatibility (though we're using Firebase now)
       provider.addScope('https://www.googleapis.com/auth/drive.file')
 
-      log.debug('Starting Google sign-in flow...')
+      console.debug(LOG_PREFIX_FN, 'Starting Google sign-in flow...')
       const result = await signInWithPopup(auth, provider)
 
       const firebaseUser = result.user
       const user = this.convertFirebaseUserToUser(firebaseUser)
 
-      log.log(`✅ User signed in: ${user.name}`)
+      console.log(LOG_PREFIX_FN, `✅ User signed in: ${user.name}`)
       return user
     } catch (error) {
-      log.error('Sign-in failed:', error)
+      console.error(LOG_PREFIX_FN, 'Sign-in failed:', error)
       throw error
     }
   }
 
   async signOut(): Promise<void> {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:signOut`
     try {
       await signOut(auth)
-      log.log('✅ User signed out')
+      console.log(LOG_PREFIX_FN, '✅ User signed out')
     } catch (error) {
-      log.error('Sign-out failed:', error)
+      console.error(LOG_PREFIX_FN, 'Sign-out failed:', error)
       throw error
     }
   }

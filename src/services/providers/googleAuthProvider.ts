@@ -4,10 +4,10 @@
  */
 
 import type { User } from '@/types'
-import { createLogger } from '@/utils/logger'
+// Removed custom logger; use console.* with explicit prefixes
 import type { AuthProvider, TokenStore } from './types'
 
-const log = createLogger('GoogleAuthProvider')
+const LOG_PREFIX_FILE = '[clock-tasks][GoogleAuthProvider]'
 
 /**
  * Simple in-memory token store
@@ -37,8 +37,9 @@ export class GoogleAuthProvider implements AuthProvider {
   }
 
   async signIn(): Promise<User> {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:signIn`
     try {
-      log.debug('Starting Google OAuth sign-in flow...')
+      console.debug(LOG_PREFIX_FN, 'Starting Google OAuth sign-in flow...')
 
       // Load Google API client library if not already loaded
       if (!window.gapi) {
@@ -69,21 +70,22 @@ export class GoogleAuthProvider implements AuthProvider {
               isGuest: false
             }
 
-            log.log(`✅ User signed in: ${user.name}`)
+            console.log(LOG_PREFIX_FN, `✅ User signed in: ${user.name}`)
             resolve(user)
           }).catch((error: any) => {
-            log.error('Google sign-in failed:', error)
+            console.error(LOG_PREFIX_FN, 'Google sign-in failed:', error)
             reject(error)
           })
         })
       })
     } catch (error) {
-      log.error('Sign-in failed:', error)
+      console.error(LOG_PREFIX_FN, 'Sign-in failed:', error)
       throw error
     }
   }
 
   async signOut(): Promise<void> {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:signOut`
     try {
       if (!window.gapi) {
         return
@@ -93,10 +95,10 @@ export class GoogleAuthProvider implements AuthProvider {
       if (auth2) {
         await auth2.signOut()
         this.tokenStore.clearToken()
-        log.log('✅ User signed out')
+        console.log(LOG_PREFIX_FN, '✅ User signed out')
       }
     } catch (error) {
-      log.error('Sign-out failed:', error)
+      console.error(LOG_PREFIX_FN, 'Sign-out failed:', error)
       throw error
     }
   }
@@ -160,7 +162,7 @@ export class GoogleAuthProvider implements AuthProvider {
         }
       })
     } catch (error) {
-      log.error('Auth state listener setup failed:', error)
+      console.error(`${LOG_PREFIX_FILE}:onAuthStateChange`, 'Auth state listener setup failed:', error)
       callback(null)
     }
 
@@ -195,7 +197,7 @@ export class GoogleAuthProvider implements AuthProvider {
         isGuest: false
       }
     } catch (error) {
-      log.error('Failed to get current user:', error)
+      console.error(`${LOG_PREFIX_FILE}:getCurrentUser`, 'Failed to get current user:', error)
       return null
     }
   }

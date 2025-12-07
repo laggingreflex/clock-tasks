@@ -4,12 +4,12 @@
  * Requires access token from GoogleAuthProvider
  */
 
-import { createLogger } from '@/utils/logger'
+// Removed custom logger; use console.* with explicit prefixes
 import type { StoredData } from '@/core'
 import { serializeData, deserializeData, validateData } from '@/core/storageCore'
 import type { StorageProvider, TokenStore } from './types'
 
-const log = createLogger('GoogleDriveStorageProvider')
+const LOG_PREFIX_FILE = '[clock-tasks][GoogleDriveStorageProvider]'
 
 type DataCallback = (data: StoredData) => void
 
@@ -44,8 +44,9 @@ export class GoogleDriveStorageProvider implements StorageProvider {
   }
 
   setUserId(userId: string): void {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:setUserId`
     if (this.currentUserId !== userId) {
-      log.log(`🔐 Setting user ID: ${userId}`)
+      console.log(LOG_PREFIX_FN, `🔐 Setting user ID: ${userId}`)
 
       // Clean up old state
       if (this.currentUserId) {
@@ -68,9 +69,10 @@ export class GoogleDriveStorageProvider implements StorageProvider {
   }
 
   async save(data: StoredData): Promise<void> {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:save`
     try {
       if (!this.currentUserId) {
-        log.warn('Cannot save to Google Drive: no user ID set')
+        console.warn(LOG_PREFIX_FN, 'Cannot save to Google Drive: no user ID set')
         return
       }
 
@@ -80,7 +82,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
       const serialized = serializeData(data)
       const fileContent = JSON.stringify(serialized, null, 2)
 
-      log.debug(`Saving to Google Drive: ${data.tasks.length} tasks, ${data.history.length} clicks`)
+      console.debug(LOG_PREFIX_FN, `Saving to Google Drive: ${data.tasks.length} tasks, ${data.history.length} clicks`)
 
       if (this.fileId) {
         // Update existing file
@@ -90,25 +92,26 @@ export class GoogleDriveStorageProvider implements StorageProvider {
         await this.createFile('tasks.json', fileContent)
       }
 
-      log.log('☁️ Saved to Google Drive')
+      console.log(LOG_PREFIX_FN, '☁️ Saved to Google Drive')
     } catch (error) {
-      log.error('Failed to save to Google Drive:', error)
+      console.error(LOG_PREFIX_FN, 'Failed to save to Google Drive:', error)
       throw error
     }
   }
 
   async load(): Promise<StoredData> {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:load`
     try {
       if (!this.currentUserId) {
         throw new Error('No user ID set. Call setUserId() first.')
       }
 
-      log.debug('Loading tasks from Google Drive...')
+      console.debug(LOG_PREFIX_FN, 'Loading tasks from Google Drive...')
 
       await this.ensureClockTasksFolder()
 
       if (!this.fileId) {
-        log.log('☁️ No data in Google Drive, initializing empty')
+        console.log(LOG_PREFIX_FN, '☁️ No data in Google Drive, initializing empty')
         const emptyData: StoredData = {
           tasks: [],
           history: [],
@@ -123,39 +126,41 @@ export class GoogleDriveStorageProvider implements StorageProvider {
       const data = deserializeData(serialized)
 
       if (!validateData(data)) {
-        log.error('Invalid data from Google Drive:', data)
+        console.error(LOG_PREFIX_FN, 'Invalid data from Google Drive:', data)
         throw new Error('Invalid data structure from Google Drive')
       }
 
-      log.log(`☁️ Loaded from Google Drive: ${data.tasks.length} tasks, ${data.history.length} clicks`)
+      console.log(LOG_PREFIX_FN, `☁️ Loaded from Google Drive: ${data.tasks.length} tasks, ${data.history.length} clicks`)
       return data
     } catch (error) {
-      log.error('Failed to load from Google Drive:', error)
+      console.error(LOG_PREFIX_FN, 'Failed to load from Google Drive:', error)
       throw error
     }
   }
 
   async clear(): Promise<void> {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:clear`
     try {
       if (this.fileId) {
         await this.deleteFile(this.fileId)
         this.fileId = null
-        log.log('☁️ Cleared Google Drive data')
+        console.log(LOG_PREFIX_FN, '☁️ Cleared Google Drive data')
       }
     } catch (error) {
-      log.error('Failed to clear Google Drive:', error)
+      console.error(LOG_PREFIX_FN, 'Failed to clear Google Drive:', error)
       throw error
     }
   }
 
   startListening(callback: DataCallback): void {
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:startListening`
     try {
       if (!this.currentUserId) {
-        log.warn('Cannot start listening: no user ID set')
+        console.warn(LOG_PREFIX_FN, 'Cannot start listening: no user ID set')
         return
       }
 
-      log.log('📡 Starting Google Drive polling listener (10s interval)')
+      console.log(LOG_PREFIX_FN, '📡 Starting Google Drive polling listener (10s interval)')
 
       // Stop any existing polling
       this.stopListening()
@@ -176,35 +181,36 @@ export class GoogleDriveStorageProvider implements StorageProvider {
             const data = deserializeData(serialized)
 
             if (!validateData(data)) {
-              log.error('Invalid data from Google Drive polling:', data)
+              console.error(LOG_PREFIX_FN, 'Invalid data from Google Drive polling:', data)
               return
             }
 
-            log.log(`📡 Google Drive update: ${data.tasks.length} tasks, ${data.history.length} clicks`)
+            console.log(LOG_PREFIX_FN, `📡 Google Drive update: ${data.tasks.length} tasks, ${data.history.length} clicks`)
             callback(data)
           }
         } catch (error) {
-          log.error('Error in polling listener:', error)
+          console.error(LOG_PREFIX_FN, 'Error in polling listener:', error)
         }
       }, 10000)
 
-      log.log('✅ Google Drive listener started')
+      console.log(LOG_PREFIX_FN, '✅ Google Drive listener started')
     } catch (error) {
-      log.error('Failed to start Google Drive listener:', error)
+      console.error(LOG_PREFIX_FN, 'Failed to start Google Drive listener:', error)
       throw error
     }
   }
 
   stopListening(): void {
     if (this.pollingInterval) {
-      log.log('🔇 Stopping Google Drive listener')
+      console.log(`${LOG_PREFIX_FILE}:stopListening`, '🔇 Stopping Google Drive listener')
       clearInterval(this.pollingInterval)
       this.pollingInterval = null
     }
   }
 
   clearUser(): void {
-    log.log('🔓 Clearing user')
+    const LOG_PREFIX_FN = `${LOG_PREFIX_FILE}:clearUser`
+    console.log(LOG_PREFIX_FN, '🔓 Clearing user')
     this.stopListening()
     this.currentUserId = null
     this.folderId = null
@@ -233,7 +239,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
       if (folders.length > 0) {
         this.folderId = folders[0].id
-        log.log(`📁 Found existing ClockTasks folder: ${this.folderId}`)
+        console.log(`${LOG_PREFIX_FILE}:ensureClockTasksFolder`, `📁 Found existing ClockTasks folder: ${this.folderId}`)
       } else {
         // Create new folder
         const createFolderResponse = await this.apiCall('POST', 'https://www.googleapis.com/drive/v3/files', {
@@ -241,13 +247,13 @@ export class GoogleDriveStorageProvider implements StorageProvider {
           mimeType: 'application/vnd.google-apps.folder'
         })
         this.folderId = createFolderResponse.id
-        log.log(`📁 Created new ClockTasks folder: ${this.folderId}`)
+        console.log(`${LOG_PREFIX_FILE}:ensureClockTasksFolder`, `📁 Created new ClockTasks folder: ${this.folderId}`)
       }
 
       // Now find or create tasks.json file
       await this.ensureTasksFile()
     } catch (error) {
-      log.error('Failed to ensure ClockTasks folder:', error)
+      console.error(`${LOG_PREFIX_FILE}:ensureClockTasksFolder`, 'Failed to ensure ClockTasks folder:', error)
       throw error
     }
   }
@@ -269,11 +275,11 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
       if (files.length > 0) {
         this.fileId = files[0].id
-        log.debug(`📄 Found existing tasks.json: ${this.fileId}`)
+        console.debug(`${LOG_PREFIX_FILE}:ensureTasksFile`, `📄 Found existing tasks.json: ${this.fileId}`)
       }
       // If no file exists, it will be created on first save
     } catch (error) {
-      log.error('Failed to ensure tasks.json file:', error)
+      console.error(`${LOG_PREFIX_FILE}:ensureTasksFile`, 'Failed to ensure tasks.json file:', error)
       throw error
     }
   }
@@ -291,14 +297,14 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
       const response = await this.apiCall('POST', 'https://www.googleapis.com/drive/v3/files', metadata)
       this.fileId = response.id
-      log.debug(`📄 Created new file: ${this.fileId}`)
+      console.debug(`${LOG_PREFIX_FILE}:createFile`, `📄 Created new file: ${this.fileId}`)
 
       // Upload content
       if (this.fileId) {
         await this.updateFile(this.fileId, content)
       }
     } catch (error) {
-      log.error('Failed to create file:', error)
+      console.error(`${LOG_PREFIX_FILE}:createFile`, 'Failed to create file:', error)
       throw error
     }
   }
@@ -310,9 +316,9 @@ export class GoogleDriveStorageProvider implements StorageProvider {
         headers: this.getAuthHeader(),
         body: content
       })
-      log.debug(`✏️ Updated file: ${fileId}`)
+      console.debug(`${LOG_PREFIX_FILE}:updateFile`, `✏️ Updated file: ${fileId}`)
     } catch (error) {
-      log.error('Failed to update file:', error)
+      console.error(`${LOG_PREFIX_FILE}:updateFile`, 'Failed to update file:', error)
       throw error
     }
   }
@@ -330,7 +336,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
       return await response.text()
     } catch (error) {
-      log.error('Failed to read file:', error)
+      console.error(`${LOG_PREFIX_FILE}:readFile`, 'Failed to read file:', error)
       throw error
     }
   }
@@ -341,9 +347,9 @@ export class GoogleDriveStorageProvider implements StorageProvider {
         method: 'DELETE',
         headers: this.getAuthHeader()
       })
-      log.debug(`🗑️ Deleted file: ${fileId}`)
+      console.debug(`${LOG_PREFIX_FILE}:deleteFile`, `🗑️ Deleted file: ${fileId}`)
     } catch (error) {
-      log.error('Failed to delete file:', error)
+      console.error(`${LOG_PREFIX_FILE}:deleteFile`, 'Failed to delete file:', error)
       throw error
     }
   }
