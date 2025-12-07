@@ -30,12 +30,15 @@ function App() {
   useEffect(() => {
     const unsubscribe = authProvider.onAuthStateChange((authUser) => {
       if (authUser) {
-        setUser(authUser)
+        // Guard: avoid redundant updates if user hasn't changed
+        if (user?.id !== authUser.id) {
+          setUser(authUser)
+        }
         authProvider.saveUser(authUser)
       }
     })
     return unsubscribe
-  }, [authProvider])
+  }, [authProvider, user?.id])
 
   const { state, setState } = useTaskState()
   const ui = useUIState()
@@ -68,7 +71,8 @@ function App() {
   }
 
   const handleLoginSuccess = (newUser: User) => {
-    setUser(newUser)
+    // Do not call setUser here to avoid duplicate state updates.
+    // onAuthStateChange will update the user state once the provider confirms login.
     authProvider.saveUser(newUser)
   }
 

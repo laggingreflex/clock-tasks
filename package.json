@@ -8,9 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "dev": "vite preview",
-    "test": "vitest run",
-    "test:ui": "vitest run --ui",
-    "test:coverage": "vitest run --coverage",
+    "test": "npm run build && vitest run",
+    "test:ui": "npm run build && vitest run --ui",
+    "test:coverage": "npm run build && vitest run --coverage",
     "deploy": "npm run build && firebase deploy"
   },
   "dependencies": {
