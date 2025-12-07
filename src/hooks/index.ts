@@ -4,6 +4,7 @@ export { useUIState } from './useUIState'
 export { useSyncEffect } from './useSyncEffect'
 export { useTaskHandlers } from './useTaskHandlers'
 export { useSortedTasks } from './useSortedTasks'
+export { useDataTransfer } from './useDataTransfer'
 
 /**
  * Hook to handle click outside for modals/menus

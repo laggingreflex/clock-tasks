@@ -4,7 +4,7 @@ import { formatTime, TaskQueries } from './core'
 import { saveSortModePreference } from './services/providers/localStorageProvider'
 import { useAppOptions } from './hooks/OptionsContext'
 import { getAuthProvider, logProviderConfiguration } from './services/providers'
-import { useClickOutside, useDocumentTitle, useScrollToNewTask, useCurrentTime, useTaskState, useUIState, useSyncEffect, useTaskHandlers, useSortedTasks } from './hooks'
+import { useClickOutside, useDocumentTitle, useScrollToNewTask, useCurrentTime, useTaskState, useUIState, useSyncEffect, useTaskHandlers, useSortedTasks, useDataTransfer } from './hooks'
 import { LoginComponent } from './components/LoginComponent'
 import { AddTaskForm } from './components/AddTaskForm'
 import { TaskList } from './components/TaskList'
@@ -45,6 +45,15 @@ function App() {
   const { syncToGoogleDrive } = useSyncEffect(user, setState, setDriveFileId, () => {})
   const handlers = useTaskHandlers(state, setState, syncToGoogleDrive, driveFileId, ui.setDeletionMode, ui.setLastAddedTaskId)
   const sortedTasks = useSortedTasks(state, ui.now, ui.sortMode)
+  const { handleExportData, handleImportData } = useDataTransfer({
+    state,
+    setState,
+    sortMode: ui.sortMode,
+    setSortMode: ui.setSortMode,
+    syncToStorage: syncToGoogleDrive,
+    driveFileId,
+    readOnly
+  })
 
   // Save sort mode preference whenever it changes
   useEffect(() => {
@@ -117,6 +126,8 @@ function App() {
             onToggleSort={() => readOnly ? null : ui.setSortMode(prev => prev === 'total' ? 'alphabetical' : 'total')}
             onToggleDeletion={() => readOnly ? null : ui.setDeletionMode(!ui.deletionMode)}
             onDeleteAll={handlers.handleDeleteAllTasks}
+            onExportData={handleExportData}
+            onImportData={handleImportData}
             onToggleReadOnly={() => {
               const url = new URL(window.location.href)
               if (readOnly) {
