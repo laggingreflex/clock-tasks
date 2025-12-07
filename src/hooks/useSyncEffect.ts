@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
 import { getStorageProvider } from '@/services/providers'
 import { createLogger } from '@/utils/logger'
 import { saveToLocalStorage } from '@/core'
@@ -16,13 +16,17 @@ export const useSyncEffect = (
   setLastSyncTime: (time: number) => void
 ) => {
   const isInitializedRef = useRef(false)
-  const storageProvider = getStorageProvider()
+  // Memoize storage provider to prevent re-creation and effect churn
+  const storageProvider = useMemo(() => getStorageProvider(), [])
   const { readOnly } = useAppOptions()
 
   // Initialize storage provider on user login
   useEffect(() => {
     if (user && !user.isGuest) {
-      log.log(`🔐 User logged in: ${user.name}`)
+      // Log only once per login session
+      if (!isInitializedRef.current) {
+        log.log(`🔐 User logged in: ${user.name}`)
+      }
       storageProvider.setUserId(user.id)
       initializeStorage()
     } else if (user?.isGuest) {
@@ -39,7 +43,7 @@ export const useSyncEffect = (
       // Cleanup listener on unmount or user change
       storageProvider.stopListening()
     }
-  }, [user, storageProvider])
+  }, [user])
 
   const initializeStorage = async () => {
     if (!user || user.isGuest || isInitializedRef.current) return

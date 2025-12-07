@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import './App.css'
 import { formatTime, TaskQueries } from './core'
 import { saveSortModePreference } from './core/storage'
@@ -14,7 +14,8 @@ import type { User } from './types'
 
 function App() {
   const { readOnly } = useAppOptions()
-  const authProvider = getAuthProvider()
+  // Memoize auth provider to prevent resubscription and stabilize dependencies
+  const authProvider = useMemo(() => getAuthProvider(), [])
 
   const [user, setUser] = useState<User | null>(() => authProvider.loadUser())
   const [driveFileId, setDriveFileId] = useState<string | null>(null)

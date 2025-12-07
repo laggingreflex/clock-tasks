@@ -86,18 +86,30 @@ class GoogleTokenStore implements TokenStore {
  * Returns singleton instances - safe to call multiple times
  */
 export function getAuthProvider(): AuthProvider {
+  // Cache instances per provider to ensure singleton semantics
+  // This avoids recreating providers on every render and stabilizes effect dependencies.
   const provider = getCurrentProviderName()
+
+  // Module-scoped caches
+  ;(getAuthProvider as any)._instances ||= {}
+  const cache: Record<string, AuthProvider> = (getAuthProvider as any)._instances
+
+  if (cache[provider]) {
+    return cache[provider]
+  }
 
   log.debug(`Creating AuthProvider: ${provider}`)
 
   switch (provider) {
     case 'firebase':
-      return new FirebaseAuthProvider()
+      cache[provider] = new FirebaseAuthProvider()
+      return cache[provider]
 
     case 'google':
       // Share token store between auth and storage providers
       const tokenStore = GoogleTokenStore.getInstance()
-      return new GoogleAuthProvider(tokenStore)
+      cache[provider] = new GoogleAuthProvider(tokenStore)
+      return cache[provider]
 
     default:
       const exhaustiveCheck: never = provider
@@ -110,18 +122,28 @@ export function getAuthProvider(): AuthProvider {
  * Returns singleton instances - safe to call multiple times
  */
 export function getStorageProvider(): StorageProvider {
+  // Cache instances per provider to ensure singleton semantics
   const provider = getCurrentProviderName()
+
+  ;(getStorageProvider as any)._instances ||= {}
+  const cache: Record<string, StorageProvider> = (getStorageProvider as any)._instances
+
+  if (cache[provider]) {
+    return cache[provider]
+  }
 
   log.debug(`Creating StorageProvider: ${provider}`)
 
   switch (provider) {
     case 'firebase':
-      return new FirebaseStorageProvider()
+      cache[provider] = new FirebaseStorageProvider()
+      return cache[provider]
 
     case 'google':
       // Share token store between auth and storage providers
       const tokenStore = GoogleTokenStore.getInstance()
-      return new GoogleDriveStorageProvider(tokenStore)
+      cache[provider] = new GoogleDriveStorageProvider(tokenStore)
+      return cache[provider]
 
     default:
       const exhaustiveCheck: never = provider
